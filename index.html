@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VM 2026 Tipping</title>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #06080f; }
+    select option { background: #0c1120; color: #ddd8c8; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #06080f; }
+    ::-webkit-scrollbar-thumb { background: #1c2b45; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+
+const WORLD_GROUPS = {
+  A: ["Mexico","Sør-Korea","Sør-Afrika","Tsjekkia"],
+  B: ["Canada","Bosnia-Hercegovina","Qatar","Sveits"],
+  C: ["Brasil","Marokko","Haiti","Skottland"],
+  D: ["USA","Paraguay","Australia","Tyrkia"],
+  E: ["Tyskland","Curaçao","Elfenbenskysten","Ecuador"],
+  F: ["Nederland","Japan","Sverige","Tunisia"],
+  G: ["Belgia","Egypt","Iran","New Zealand"],
+  H: ["Spania","Kapp Verde","Saudi-Arabia","Uruguay"],
+  I: ["Frankrike","Senegal","Irak","Norge"],
+  J: ["Argentina","Algeria","Østerrike","Jordan"],
+  K: ["Portugal","DR Kongo","Uzbekistan","Colombia"],
+  L: ["England","Kroatia","Ghana","Panama"],
+};
+
+const FLAGS = {
+  "Mexico":"🇲🇽","Sør-Korea":"🇰🇷","Sør-Afrika":"🇿🇦","Tsjekkia":"🇨🇿",
+  "Canada":"🇨🇦","Bosnia-Hercegovina":"🇧🇦","Qatar":"🇶🇦","Sveits":"🇨🇭",
+  "Brasil":"🇧🇷","Marokko":"🇲🇦","Haiti":"🇭🇹","Skottland":"🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+  "USA":"🇺🇸","Paraguay":"🇵🇾","Australia":"🇦🇺","Tyrkia":"🇹🇷",
+  "Tyskland":"🇩🇪","Curaçao":"🇨🇼","Elfenbenskysten":"🇨🇮","Ecuador":"🇪🇨",
+  "Nederland":"🇳🇱","Japan":"🇯🇵","Sverige":"🇸🇪","Tunisia":"🇹🇳",
+  "Belgia":"🇧🇪","Egypt":"🇪🇬","Iran":"🇮🇷","New Zealand":"🇳🇿",
+  "Spania":"🇪🇸","Kapp Verde":"🇨🇻","Saudi-Arabia":"🇸🇦","Uruguay":"🇺🇾",
+  "Frankrike":"🇫🇷","Senegal":"🇸🇳","Irak":"🇮🇶","Norge":"🇳🇴",
+  "Argentina":"🇦🇷","Algeria":"🇩🇿","Østerrike":"🇦🇹","Jordan":"🇯🇴",
+  "Portugal":"🇵🇹","DR Kongo":"🇨🇩","Uzbekistan":"🇺🇿","Colombia":"🇨🇴",
+  "England":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Kroatia":"🇭🇷","Ghana":"🇬🇭","Panama":"🇵🇦",
+};
+
+const ALL_TEAMS = Object.values(WORLD_GROUPS).flat();
+
+const MATCH_SCHEDULE = [
+  {date:"11. jun",group:"A",home:"Mexico",away:"Sør-Afrika"},
+  {date:"11. jun",group:"A",home:"Sør-Korea",away:"Tsjekkia"},
+  {date:"12. jun",group:"B",home:"Canada",away:"Bosnia-Hercegovina"},
+  {date:"12. jun",group:"D",home:"USA",away:"Paraguay"},
+  {date:"13. jun",group:"B",home:"Qatar",away:"Sveits"},
+  {date:"13. jun",group:"C",home:"Brasil",away:"Marokko"},
+  {date:"13. jun",group:"C",home:"Haiti",away:"Skottland"},
+  {date:"14. jun",group:"D",home:"Australia",away:"Tyrkia"},
+  {date:"14. jun",group:"E",home:"Tyskland",away:"Curaçao"},
+  {date:"14. jun",group:"F",home:"Nederland",away:"Japan"},
+  {date:"14. jun",group:"E",home:"Elfenbenskysten",away:"Ecuador"},
+  {date:"14. jun",group:"F",home:"Sverige",away:"Tunisia"},
+  {date:"15. jun",group:"H",home:"Spania",away:"Kapp Verde"},
+  {date:"15. jun",group:"G",home:"Belgia",away:"Egypt"},
+  {date:"15. jun",group:"H",home:"Saudi-Arabia",away:"Uruguay"},
+  {date:"15. jun",group:"G",home:"Iran",away:"New Zealand"},
+  {date:"16. jun",group:"I",home:"Frankrike",away:"Senegal"},
+  {date:"16. jun",group:"I",home:"Irak",away:"Norge"},
+  {date:"16. jun",group:"J",home:"Argentina",away:"Algeria"},
+  {date:"17. jun",group:"J",home:"Østerrike",away:"Jordan"},
+  {date:"17. jun",group:"K",home:"Portugal",away:"DR Kongo"},
+  {date:"17. jun",group:"L",home:"England",away:"Kroatia"},
+  {date:"17. jun",group:"L",home:"Ghana",away:"Panama"},
+  {date:"17. jun",group:"K",home:"Uzbekistan",away:"Colombia"},
+  {date:"18. jun",group:"A",home:"Tsjekkia",away:"Sør-Afrika"},
+  {date:"18. jun",group:"B",home:"Sveits",away:"Bosnia-Hercegovina"},
+  {date:"18. jun",group:"B",home:"Canada",away:"Qatar"},
+  {date:"18. jun",group:"A",home:"Mexico",away:"Sør-Korea"},
+  {date:"19. jun",group:"D",home:"USA",away:"Australia"},
+  {date:"19. jun",group:"C",home:"Skottland",away:"Marokko"},
+  {date:"19. jun",group:"C",home:"Brasil",away:"Haiti"},
+  {date:"19. jun",group:"D",home:"Tyrkia",away:"Paraguay"},
+  {date:"20. jun",group:"F",home:"Nederland",away:"Sverige"},
+  {date:"20. jun",group:"E",home:"Tyskland",away:"Elfenbenskysten"},
+  {date:"20. jun",group:"E",home:"Ecuador",away:"Curaçao"},
+  {date:"20. jun",group:"F",home:"Tunisia",away:"Japan"},
+  {date:"21. jun",group:"H",home:"Spania",away:"Saudi-Arabia"},
+  {date:"21. jun",group:"G",home:"Belgia",away:"Iran"},
+  {date:"21. jun",group:"H",home:"Uruguay",away:"Kapp Verde"},
+  {date:"21. jun",group:"G",home:"New Zealand",away:"Egypt"},
+  {date:"22. jun",group:"I",home:"Frankrike",away:"Irak"},
+  {date:"22. jun",group:"I",home:"Norge",away:"Senegal"},
+  {date:"22. jun",group:"J",home:"Argentina",away:"Østerrike"},
+  {date:"23. jun",group:"J",home:"Jordan",away:"Algeria"},
+  {date:"23. jun",group:"K",home:"Portugal",away:"Uzbekistan"},
+  {date:"23. jun",group:"L",home:"England",away:"Ghana"},
+  {date:"23. jun",group:"L",home:"Panama",away:"Kroatia"},
+  {date:"23. jun",group:"K",home:"Colombia",away:"DR Kongo"},
+  {date:"24. jun",group:"A",home:"Mexico",away:"Tsjekkia"},
+  {date:"24. jun",group:"A",home:"Sør-Afrika",away:"Sør-Korea"},
+  {date:"24. jun",group:"B",home:"Bosnia-Hercegovina",away:"Qatar"},
+  {date:"24. jun",group:"B",home:"Sveits",away:"Canada"},
+  {date:"25. jun",group:"C",home:"Brasil",away:"Skottland"},
+  {date:"25. jun",group:"C",home:"Marokko",away:"Haiti"},
+  {date:"25. jun",group:"D",home:"USA",away:"Tyrkia"},
+  {date:"25. jun",group:"D",home:"Paraguay",away:"Australia"},
+  {date:"26. jun",group:"E",home:"Tyskland",away:"Ecuador"},
+  {date:"26. jun",group:"E",home:"Curaçao",away:"Elfenbenskysten"},
+  {date:"26. jun",group:"F",home:"Nederland",away:"Tunisia"},
+  {date:"26. jun",group:"F",home:"Japan",away:"Sverige"},
+  {date:"27. jun",group:"G",home:"Belgia",away:"New Zealand"},
+  {date:"27. jun",group:"G",home:"Egypt",away:"Iran"},
+  {date:"27. jun",group:"H",home:"Spania",away:"Uruguay"},
+  {date:"27. jun",group:"H",home:"Kapp Verde",away:"Saudi-Arabia"},
+  {date:"27. jun",group:"I",home:"Frankrike",away:"Norge"},
+  {date:"27. jun",group:"I",home:"Senegal",away:"Irak"},
+  {date:"27. jun",group:"J",home:"Argentina",away:"Jordan"},
+  {date:"27. jun",group:"J",home:"Algeria",away:"Østerrike"},
+  {date:"27. jun",group:"K",home:"Portugal",away:"Colombia"},
+  {date:"27. jun",group:"K",home:"DR Kongo",away:"Uzbekistan"},
+  {date:"27. jun",group:"L",home:"England",away:"Panama"},
+  {date:"27. jun",group:"L",home:"Kroatia",away:"Ghana"},
+];
+
+const NORGE_RUNDER = ["Gruppespill (ute)","Runde av 32","Runde av 16","Kvartfinale","Semifinale","Finale (2. plass)","VM-VINNER 🏆"];
+const NORGE_POENG  = ["0","1","2","3","4","5","6","7","8","9"];
+const SHEET_URL    = "https://script.google.com/macros/s/AKfycbw_yyKWo7dNgxW5MxGXgr0hmT1VZaxChYdEdo-sXSx8Eh1oG-rWRr1QTHUTVjjWIOnS/exec";
+
+const T = {
+  bg:"#06080f",surface:"#0c1120",surfaceHi:"#111b30",
+  border:"#1c2b45",borderHi:"#2a3f60",
+  gold:"#c8a84b",goldLight:"#e8c96a",goldGlow:"rgba(200,168,75,0.15)",
+  text:"#ddd8c8",muted:"#566070",faint:"#1a2235",
+  green:"#3dba6e",greenDim:"#0d2a1a",
+  red:"#e05050",redDim:"#2a0d0d",
+  yellow:"#d4a017",yellowDim:"#221a05",
+  norway:"#ef2b2d",
+};
+const font = "'Georgia','Times New Roman',serif";
+const { useState } = React;
+
+function tf(t){ return (FLAGS[t]||"")+" "+t; }
+function Pill({children}){
+  return React.createElement("span",{style:{display:"inline-block",padding:"2px 10px",borderRadius:20,fontSize:"0.7rem",fontWeight:"bold",letterSpacing:"0.06em",textTransform:"uppercase",color:T.gold,border:`1px solid ${T.border}`,whiteSpace:"nowrap"}},children);
+}
+const selStyle={width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"9px 12px",color:T.text,fontSize:"0.88rem",fontFamily:font,cursor:"pointer"};
+const inpStyle={width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,padding:"9px 12px",color:T.text,fontSize:"0.88rem",boxSizing:"border-box",fontFamily:font,outline:"none"};
+
+function App(){
+  const [name,setName]=useState("");
+  const [email,setEmail]=useState("");
+  const [started,setStarted]=useState(false);
+  const [tab,setTab]=useState(0);
+  const [answers,setAnswers]=useState({});
+  const [matchResults,setMatchResults]=useState({});
+  const [submitState,setSubmitState]=useState("idle");
+  const [submitted,setSubmitted]=useState(false);
+
+  const totalMatches=MATCH_SCHEDULE.length;
+  const filledMatches=Object.keys(matchResults).length;
+  const answerCount=Object.keys(answers).filter(k=>{const v=answers[k];return Array.isArray(v)?v.length>0:!!v;}).length;
+  const canStart=name.trim()&&email.trim()&&email.includes("@");
+
+  function setAns(id,val){setAnswers(p=>({...p,[id]:val}));}
+  function setResult(idx,v){setMatchResults(p=>({...p,[idx]:v}));}
+
+  async function handleSubmit(){
+    setSubmitState("loading");
+    const payload={name,email,timestamp:new Date().toISOString(),...answers,match_results:JSON.stringify(matchResults)};
+    try{
+      await fetch(SHEET_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+      setSubmitState("done");setSubmitted(true);
+    }catch(e){setSubmitState("error");}
+  }
+
+  if(!started) return Landing({name,setName,email,setEmail,canStart,setStarted});
+  if(submitted) return ThankYou({name,email,answers,matchResults,totalMatches});
+
+  const tabs=["📋 Spørsmål","⚽ Gruppespill","🏁 Lever inn"];
+  const tabBadge=[`${answerCount}/16`,`${filledMatches}/${totalMatches}`,""];
+
+  return (
+    <div style={{minHeight:"100vh",background:T.bg,fontFamily:font,color:T.text}}>
+      <div style={{background:T.surface,borderBottom:`2px solid ${T.gold}`,padding:"11px 18px",display:"flex",alignItems:"center",gap:14,position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 20px rgba(0,0,0,0.5)"}}>
+        <span style={{fontSize:"1.3rem"}}>⚽</span>
+        <div><div style={{color:T.goldLight,fontWeight:"bold",fontSize:"0.95rem"}}>VM 2026 Tipping</div><div style={{color:T.muted,fontSize:"0.72rem"}}>{name}</div></div>
+        <div style={{marginLeft:"auto",display:"flex",gap:5}}>
+          {tabs.map((t,i)=>(
+            <button key={t} onClick={()=>setTab(i)} style={{background:tab===i?T.gold:"transparent",color:tab===i?"#06080f":T.muted,border:`1px solid ${tab===i?T.gold:T.border}`,borderRadius:6,padding:"5px 12px",fontSize:"0.74rem",fontWeight:tab===i?"bold":"normal",cursor:"pointer",fontFamily:font}}>
+              {t}{tabBadge[i]?` (${tabBadge[i]})`:""}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div style={{maxWidth:840,margin:"0 auto",padding:"28px 14px 60px"}}>
+        {tab===0&&<TabSporsmal answers={answers} setAns={setAns} onNext={()=>setTab(1)}/>}
+        {tab===1&&<TabGruppe matchResults={matchResults} setResult={setResult} filledMatches={filledMatches} totalMatches={totalMatches} onBack={()=>setTab(0)} onNext={()=>setTab(2)}/>}
+        {tab===2&&<TabLever answers={answers} matchResults={matchResults} totalMatches={totalMatches} filledMatches={filledMatches} answerCount={answerCount} email={email} submitState={submitState} onSubmit={handleSubmit} onBack={()=>setTab(1)}/>}
+      </div>
+    </div>
+  );
+}
+
+function Landing({name,setName,email,setEmail,canStart,setStarted}){
+  return (
+    <div style={{minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontFamily:font,padding:"2rem"}}>
+      <div style={{position:"fixed",inset:0,backgroundImage:"radial-gradient(ellipse 60% 40% at 50% 0%, rgba(200,168,75,0.07) 0%, transparent 70%)",pointerEvents:"none"}}/>
+      <div style={{textAlign:"center",maxWidth:480,position:"relative",zIndex:1}}>
+        <div style={{fontSize:"4rem",marginBottom:12,filter:"drop-shadow(0 0 30px rgba(200,168,75,0.5))"}}>⚽</div>
+        <div style={{color:T.goldLight,fontSize:"2.8rem",fontWeight:"bold",letterSpacing:"0.02em",lineHeight:1}}>VM 2026</div>
+        <div style={{color:T.muted,fontSize:"0.78rem",letterSpacing:"0.2em",textTransform:"uppercase",margin:"8px 0 32px"}}>Tippekonkurranse · USA / Canada / Mexico</div>
+        <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:14,padding:"26px 28px",marginBottom:20}}>
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <div>
+              <div style={{color:T.gold,fontSize:"0.75rem",letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Ditt navn</div>
+              <input value={name} onChange={e=>setName(e.target.value)} placeholder="Ola Nordmann" style={{...inpStyle,border:`1px solid ${name.trim()?T.borderHi:T.border}`}}/>
+            </div>
+            <div>
+              <div style={{color:T.gold,fontSize:"0.75rem",letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>
+                E-postadresse <span style={{color:T.muted,fontWeight:"normal",textTransform:"none",letterSpacing:0}}>(for bekreftelse)</span>
+              </div>
+              <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="ola@nordmann.no" type="email"
+                onKeyDown={e=>e.key==="Enter"&&canStart&&setStarted(true)}
+                style={{...inpStyle,border:`1px solid ${email.includes("@")?T.borderHi:T.border}`}}/>
+              <div style={{color:T.muted,fontSize:"0.72rem",marginTop:6}}>📧 Du mottar en kopi av tipset ditt på e-post</div>
+            </div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginTop:18}}>
+            {[["📋","16 spørsmål","med poengvekting"],["⚽","72 kamper","2p per riktig"],["🏆","Sluttspill","eget skjema"]].map(([ic,t,s])=>(
+              <div key={t} style={{background:T.faint,borderRadius:8,padding:"10px 8px",textAlign:"center"}}>
+                <div style={{fontSize:"1.3rem"}}>{ic}</div>
+                <div style={{color:T.text,fontSize:"0.78rem",fontWeight:"bold",marginTop:2}}>{t}</div>
+                <div style={{color:T.muted,fontSize:"0.68rem",marginTop:1}}>{s}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <button onClick={()=>canStart&&setStarted(true)} disabled={!canStart}
+          style={{background:canStart?`linear-gradient(135deg,${T.gold},${T.goldLight})`:"#1a2235",color:canStart?"#06080f":T.muted,border:"none",borderRadius:10,padding:"14px 44px",fontSize:"1rem",fontWeight:"bold",letterSpacing:"0.08em",cursor:canStart?"pointer":"not-allowed",textTransform:"uppercase",fontFamily:font}}>
+          Start tipping →
+        </button>
+        <div style={{color:T.muted,fontSize:"0.72rem",marginTop:14}}>🇳🇴 Norge møter Frankrike, Senegal og Irak i Gruppe I</div>
+      </div>
+    </div>
+  );
+}
+
+function TabSporsmal({answers,setAns,onNext}){
+  return (
+    <div>
+      <SecHead icon="📋" title="Spørsmål" sub="Din prognose for turneringen"/>
+      <CatBlock title="Turneringen" color={T.gold}>
+        <QTeam  label="Hvem vinner VM?" points={10} val={answers.vm_vinner} onChange={v=>setAns("vm_vinner",v)}/>
+        <QMulti label="Fire semifinalister?" points="4p per riktig lag" val={answers.semifinalister||[]} onChange={v=>setAns("semifinalister",v)} max={4}/>
+        <QText  label="Toppscorer / Golden Boot?" points={6} val={answers.toppscorer} onChange={v=>setAns("toppscorer",v)} placeholder="Spillernavn..."/>
+      </CatBlock>
+      <CatBlock title="Gruppevinnere — 3p per riktig" color={T.gold}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          {Object.entries(WORLD_GROUPS).map(([g,teams])=>(
+            <QGrpWinner key={g} g={g} teams={teams} val={answers[`gw_${g}`]} onChange={v=>setAns(`gw_${g}`,v)}/>
+          ))}
+        </div>
+      </CatBlock>
+      <CatBlock title="🇳🇴 Norge" color={T.norway}>
+        <QSel label="Hvor langt kommer Norge?" points={4} val={answers.norge_runde} onChange={v=>setAns("norge_runde",v)} options={NORGE_RUNDER}/>
+        <QOU  label="Erling Braut Haaland — Over/Under 3.5 mål" points={3} val={answers.haaland_ou} onChange={v=>setAns("haaland_ou",v)} line="3.5"/>
+        <QSel label="Hvor mange poeng tar Norge i gruppespillet?" points={3} val={answers.norge_poeng} onChange={v=>setAns("norge_poeng",v)} options={NORGE_POENG}/>
+      </CatBlock>
+      <CatBlock title="Målrekorder" color={T.gold}>
+        <QOU label="Harry Kane — Over/Under 4.5 mål" points={3} val={answers.kane_ou} onChange={v=>setAns("kane_ou",v)} line="4.5"/>
+        <QOU label="Kylian Mbappé — Over/Under 4.5 mål" points={3} val={answers.mbappe_ou} onChange={v=>setAns("mbappe_ou",v)} line="4.5"/>
+      </CatBlock>
+      <NavRow onNext={onNext} nextLabel="Til gruppespill →"/>
+    </div>
+  );
+}
+
+function TabGruppe({matchResults,setResult,filledMatches,totalMatches,onBack,onNext}){
+  let lastDate=null;
+  return (
+    <div>
+      <SecHead icon="⚽" title="Gruppespill" sub={`Tipp utfall i alle 72 kamper — ${filledMatches} av ${totalMatches} fylt`}/>
+      <div style={{background:T.surfaceHi,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",marginBottom:18,fontSize:"0.8rem",color:T.muted,lineHeight:1.6}}>
+        <strong style={{color:T.green}}>1</strong> = Hjemmeseier &nbsp;·&nbsp;
+        <strong style={{color:T.yellow}}>X</strong> = Uavgjort &nbsp;·&nbsp;
+        <strong style={{color:T.red}}>2</strong> = Borteseier &nbsp;·&nbsp;
+        <span style={{color:T.goldLight,fontWeight:"bold"}}>2 poeng</span> per riktig utfall
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:6}}>
+        {MATCH_SCHEDULE.map((m,idx)=>{
+          const showDate=m.date!==lastDate; lastDate=m.date;
+          const v=matchResults[idx];
+          return (
+            <div key={idx}>
+              {showDate&&(
+                <div style={{display:"flex",alignItems:"center",gap:10,margin:`${idx===0?"0":"14px"} 0 8px`}}>
+                  <div style={{height:1,flex:1,background:T.border}}/>
+                  <span style={{color:T.gold,fontSize:"0.75rem",fontWeight:"bold",letterSpacing:"0.1em",textTransform:"uppercase",whiteSpace:"nowrap"}}>{m.date}</span>
+                  <div style={{height:1,flex:1,background:T.border}}/>
+                </div>
+              )}
+              <div style={{display:"flex",alignItems:"center",gap:8,background:T.bg,borderRadius:8,padding:"9px 12px",border:`1px solid ${v?T.greenDim:T.border}`}}>
+                <span style={{background:T.faint,color:T.gold,fontWeight:"bold",borderRadius:4,padding:"1px 7px",fontSize:"0.72rem",flexShrink:0}}>{m.group}</span>
+                <span style={{flex:1,textAlign:"right",fontSize:"0.86rem",fontWeight:v==="1"?"bold":"normal",color:v==="1"?T.goldLight:T.text}}>{FLAGS[m.home]||""} {m.home}</span>
+                <div style={{display:"flex",gap:3,flexShrink:0}}>
+                  {[["1",T.green,T.greenDim],["X",T.yellow,T.yellowDim],["2",T.red,T.redDim]].map(([btn,col,bg])=>(
+                    <button key={btn} onClick={()=>setResult(idx,btn)} style={{width:30,height:26,background:v===btn?bg:T.surfaceHi,color:v===btn?col:T.muted,border:`1px solid ${v===btn?col:T.border}`,borderRadius:4,cursor:"pointer",fontWeight:"bold",fontSize:"0.76rem",fontFamily:font}}>{btn}</button>
+                  ))}
+                </div>
+                <span style={{flex:1,fontSize:"0.86rem",fontWeight:v==="2"?"bold":"normal",color:v==="2"?T.goldLight:T.text}}>{FLAGS[m.away]||""} {m.away}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <NavRow onBack={onBack} onNext={onNext} nextLabel="Lever inn →"/>
+    </div>
+  );
+}
+
+function TabLever({answers,matchResults,totalMatches,filledMatches,answerCount,email,submitState,onSubmit,onBack}){
+  const rows=[
+    ["VM-vinner (10p)", answers.vm_vinner?tf(answers.vm_vinner):"—"],
+    ["Semifinalister (4p×4)", answers.semifinalister&&answers.semifinalister.length?answers.semifinalister.map(tf).join(", "):"—"],
+    ["Toppscorer (6p)", answers.toppscorer||"—"],
+    ...Object.keys(WORLD_GROUPS).map(g=>[`Gruppe ${g}-vinner (3p)`, answers[`gw_${g}`]?tf(answers[`gw_${g}`]):"—"]),
+    ["Norge — runde (4p)", answers.norge_runde||"—"],
+    ["Haaland O/U 3.5 (3p)", answers.haaland_ou||"—"],
+    ["Norge — gruppepoeng (3p)", answers.norge_poeng||"—"],
+    ["Kane O/U 4.5 (3p)", answers.kane_ou||"—"],
+    ["Mbappé O/U 4.5 (3p)", answers.mbappe_ou||"—"],
+    ["Gruppekamper (2p per riktig)", `${filledMatches}/${totalMatches} tippet`],
+  ];
+  return (
+    <div>
+      <SecHead icon="🏁" title="Lever inn tipset" sub="Sjekk og send inn"/>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:24}}>
+        {[
+          {ic:"📋",l:"Spørsmål",v:`${answerCount}/16`,ok:answerCount>=16},
+          {ic:"⚽",l:"Gruppekamper",v:`${filledMatches}/${totalMatches}`,ok:filledMatches===totalMatches},
+          {ic:"📧",l:"E-post",v:email,ok:email.includes("@")},
+        ].map(s=>(
+          <div key={s.l} style={{background:T.surface,border:`1px solid ${s.ok?T.green:T.border}`,borderRadius:10,padding:"14px 12px",textAlign:"center"}}>
+            <div style={{fontSize:"1.5rem"}}>{s.ic}</div>
+            <div style={{color:s.ok?T.green:T.goldLight,fontWeight:"bold",fontSize:s.l==="E-post"?"0.72rem":"1.2rem",margin:"4px 0",wordBreak:"break-all"}}>{s.v||"—"}</div>
+            <div style={{color:T.muted,fontSize:"0.74rem"}}>{s.l}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,padding:20,marginBottom:20}}>
+        <div style={{color:T.gold,fontSize:"0.76rem",fontWeight:"bold",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:14}}>Dine svar</div>
+        {rows.map(([label,val])=>(
+          <div key={label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:`1px solid ${T.border}`,fontSize:"0.83rem"}}>
+            <span style={{color:T.muted}}>{label}</span>
+            <span style={{color:val==="—"?T.muted:T.text,fontWeight:val!=="—"?"bold":"normal"}}>{val}</span>
+          </div>
+        ))}
+      </div>
+      {submitState==="error"&&(
+        <div style={{background:T.redDim,border:`1px solid ${T.red}`,borderRadius:8,padding:"12px 16px",marginBottom:16,color:T.red,fontSize:"0.85rem"}}>
+          ⚠️ Noe gikk galt. Sjekk nettverkstilkobling og prøv igjen.
+        </div>
+      )}
+      <div style={{textAlign:"center"}}>
+        <button onClick={onSubmit} disabled={submitState==="loading"}
+          style={{background:submitState==="loading"?"#1a2235":`linear-gradient(135deg,${T.gold},${T.goldLight})`,color:submitState==="loading"?T.muted:"#06080f",border:"none",borderRadius:12,padding:"16px 48px",fontSize:"1.05rem",fontWeight:"bold",cursor:submitState==="loading"?"not-allowed":"pointer",letterSpacing:"0.07em",textTransform:"uppercase",boxShadow:`0 6px 30px ${T.goldGlow}`,fontFamily:font}}>
+          {submitState==="loading"?"Sender inn...":"🏆 Lever tipset"}
+        </button>
+        <div style={{color:T.muted,fontSize:"0.74rem",marginTop:10}}>📧 Du mottar bekreftelse på {email}</div>
+      </div>
+      <NavRow onBack={onBack}/>
+    </div>
+  );
+}
+
+function ThankYou({name,email,answers,matchResults,totalMatches}){
+  const filled=Object.keys(matchResults).length;
+  return (
+    <div style={{minHeight:"100vh",background:T.bg,fontFamily:font,color:T.text,display:"flex",alignItems:"center",justifyContent:"center",padding:"2rem"}}>
+      <div style={{textAlign:"center",maxWidth:460}}>
+        <div style={{fontSize:"4rem",marginBottom:12,filter:`drop-shadow(0 0 30px ${T.goldGlow})`}}>🏆</div>
+        <h1 style={{color:T.goldLight,fontSize:"2rem",margin:"0 0 8px 0"}}>Tipset er levert!</h1>
+        <p style={{color:T.muted,marginBottom:8}}>{name} — du er med i konkurransen. Lykke til!</p>
+        <div style={{background:"#0a1a0a",border:`1px solid ${T.green}`,borderRadius:8,padding:"10px 16px",marginBottom:24,display:"inline-block"}}>
+          <span style={{color:T.green,fontSize:"0.84rem"}}>📧 Bekreftelse sendt til {email}</span>
+        </div>
+        <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,padding:20,textAlign:"left"}}>
+          <div style={{color:T.muted,fontSize:"0.75rem",fontWeight:"bold",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:12}}>Ditt tips</div>
+          {[
+            ["VM-vinner 🏆", answers.vm_vinner?tf(answers.vm_vinner):"—"],
+            ["Semifinalister", answers.semifinalister&&answers.semifinalister.length?answers.semifinalister.map(tf).join(", "):"—"],
+            ["Toppscorer", answers.toppscorer||"—"],
+            ["Norge — runde", answers.norge_runde||"—"],
+            ["Haaland O/U 3.5", answers.haaland_ou||"—"],
+            ["Kane O/U 4.5", answers.kane_ou||"—"],
+            ["Mbappé O/U 4.5", answers.mbappe_ou||"—"],
+            ["Gruppekamper", `${filled}/${totalMatches} tippet`],
+          ].map(([l,v])=>(
+            <div key={l} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:`1px solid ${T.border}`,fontSize:"0.84rem"}}>
+              <span style={{color:T.muted}}>{l}</span>
+              <span style={{color:v==="—"?T.muted:T.text,fontWeight:v!=="—"?"bold":"normal"}}>{v}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{color:T.muted,fontSize:"0.76rem",lineHeight:1.7,marginTop:20}}>Sluttspillsbracket sendes ut etter siste gruppekamp 🎯</div>
+      </div>
+    </div>
+  );
+}
+
+function SecHead({icon,title,sub}){
+  return (
+    <div style={{marginBottom:24}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+        <span style={{fontSize:"1.6rem"}}>{icon}</span>
+        <h2 style={{margin:0,color:T.goldLight,fontSize:"1.5rem",fontWeight:"bold"}}>{title}</h2>
+      </div>
+      <p style={{color:T.muted,margin:"0 0 0 38px",fontSize:"0.84rem"}}>{sub}</p>
+    </div>
+  );
+}
+function CatBlock({title,color,children}){
+  return (
+    <div style={{marginBottom:28}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+        <div style={{height:1,flex:1,background:T.border}}/>
+        <span style={{color:color||T.gold,fontSize:"0.76rem",fontWeight:"bold",letterSpacing:"0.12em",textTransform:"uppercase"}}>{title}</span>
+        <div style={{height:1,flex:1,background:T.border}}/>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>{children}</div>
+    </div>
+  );
+}
+function QCard({points,filled,children}){
+  return (
+    <div style={{background:T.surface,border:`1px solid ${filled?T.borderHi:T.border}`,borderRadius:10,padding:"14px 18px"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:10}}>
+        {children[0]}<Pill>{typeof points==="number"?`${points}p`:points}</Pill>
+      </div>
+      {children[1]}
+    </div>
+  );
+}
+function QTeam({label,points,val,onChange}){
+  return (
+    <QCard points={points} filled={!!val}>
+      <div style={{color:T.text,fontWeight:"bold",fontSize:"0.92rem"}}>{label}</div>
+      <select value={val||""} onChange={e=>onChange(e.target.value)} style={selStyle}>
+        <option value="">— Velg lag —</option>
+        {ALL_TEAMS.map(t=><option key={t} value={t}>{FLAGS[t]||""} {t}</option>)}
+      </select>
+    </QCard>
+  );
+}
+function QMulti({label,points,val,onChange,max}){
+  function toggle(team){val.includes(team)?onChange(val.filter(t=>t!==team)):val.length<max&&onChange([...val,team]);}
+  return (
+    <div style={{background:T.surface,border:`1px solid ${val.length===max?T.borderHi:T.border}`,borderRadius:10,padding:"14px 18px"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+        <div>
+          <div style={{color:T.text,fontWeight:"bold",fontSize:"0.92rem"}}>{label}</div>
+          <div style={{color:T.muted,fontSize:"0.75rem",marginTop:2}}>Velg nøyaktig 4 lag ({val.length}/4 valgt)</div>
+        </div>
+        <Pill>{points}</Pill>
+      </div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+        {ALL_TEAMS.map(t=>{const sel=val.includes(t),dis=!sel&&val.length>=max;return(
+          <button key={t} onClick={()=>!dis&&toggle(t)} style={{background:sel?"rgba(200,168,75,0.15)":"transparent",color:sel?T.goldLight:dis?T.muted:T.text,border:`1px solid ${sel?T.gold:T.border}`,borderRadius:5,padding:"3px 9px",fontSize:"0.77rem",cursor:dis?"not-allowed":"pointer",opacity:dis?0.4:1,fontFamily:font}}>
+            {FLAGS[t]||""} {t}
+          </button>
+        );})}
+      </div>
+    </div>
+  );
+}
+function QText({label,points,val,onChange,placeholder}){
+  return (
+    <QCard points={points} filled={!!val}>
+      <div style={{color:T.text,fontWeight:"bold",fontSize:"0.92rem"}}>{label}</div>
+      <input value={val||""} onChange={e=>onChange(e.target.value)} placeholder={placeholder||""} style={inpStyle}/>
+    </QCard>
+  );
+}
+function QGrpWinner({g,teams,val,onChange}){
+  return (
+    <div style={{background:T.surface,border:`1px solid ${val?T.borderHi:T.border}`,borderRadius:9,padding:"11px 14px"}}>
+      <span style={{background:val?T.gold:"#1a2235",color:val?"#06080f":T.muted,fontWeight:"bold",borderRadius:5,padding:"2px 9px",fontSize:"0.8rem",display:"inline-block",marginBottom:8}}>Gruppe {g}</span>
+      <select value={val||""} onChange={e=>onChange(e.target.value)} style={{...selStyle,fontSize:"0.83rem"}}>
+        <option value="">— Velg vinner —</option>
+        {teams.map(t=><option key={t} value={t}>{FLAGS[t]||""} {t}</option>)}
+      </select>
+    </div>
+  );
+}
+function QSel({label,points,val,onChange,options}){
+  return (
+    <QCard points={points} filled={!!val}>
+      <div style={{color:T.text,fontWeight:"bold",fontSize:"0.92rem"}}>{label}</div>
+      <select value={val||""} onChange={e=>onChange(e.target.value)} style={selStyle}>
+        <option value="">— Velg —</option>
+        {options.map(o=><option key={o} value={o}>{o}</option>)}
+      </select>
+    </QCard>
+  );
+}
+function QOU({label,points,val,onChange,line}){
+  return (
+    <QCard points={points} filled={!!val}>
+      <div style={{color:T.text,fontWeight:"bold",fontSize:"0.92rem"}}>{label}</div>
+      <div style={{display:"flex",gap:10}}>
+        {["Over","Under"].map(opt=>{const active=val===opt;return(
+          <button key={opt} onClick={()=>onChange(opt)} style={{flex:1,background:active?(opt==="Over"?T.greenDim:T.redDim):T.faint,color:active?(opt==="Over"?T.green:T.red):T.muted,border:`1px solid ${active?(opt==="Over"?T.green:T.red):T.border}`,borderRadius:7,padding:"9px",cursor:"pointer",fontWeight:"bold",fontSize:"0.9rem",fontFamily:font}}>
+            {opt} {line}
+          </button>
+        );})}
+      </div>
+    </QCard>
+  );
+}
+function NavRow({onBack,onNext,nextLabel}){
+  return (
+    <div style={{display:"flex",justifyContent:"space-between",marginTop:24}}>
+      {onBack?<button onClick={onBack} style={{background:"transparent",color:T.muted,border:`1px solid ${T.border}`,borderRadius:7,padding:"9px 20px",cursor:"pointer",fontSize:"0.87rem",fontFamily:font}}>← Tilbake</button>:<div/>}
+      {onNext&&<button onClick={onNext} style={{background:T.gold,color:"#06080f",border:"none",borderRadius:7,padding:"9px 22px",cursor:"pointer",fontWeight:"bold",fontSize:"0.87rem",fontFamily:font}}>{nextLabel||"Neste →"}</button>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
+
+  </script>
+</body>
+</html>
