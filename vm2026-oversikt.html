@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VM 2026 — Oversikt</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #06080f;
+      --surface: #0c1120;
+      --surface2: #111b30;
+      --border: #1c2b45;
+      --gold: #c8a84b;
+      --gold-light: #e8c96a;
+      --gold-glow: rgba(200,168,75,0.12);
+      --text: #ddd8c8;
+      --muted: #566070;
+      --faint: #1a2235;
+      --green: #3dba6e;
+      --green-dim: #0d2a1a;
+      --red: #e05050;
+      --red-dim: #2a0d0d;
+      --yellow: #d4a017;
+      --norway: #ef2b2d;
+      --font: 'Georgia', 'Times New Roman', serif;
+    }
+
+    body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
+
+    /* ── HEADER ── */
+    .header {
+      background: var(--surface);
+      border-bottom: 2px solid var(--gold);
+      padding: 14px 20px;
+      display: flex; align-items: center; gap: 14px;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.5);
+    }
+    .header-title { color: var(--gold-light); font-weight: bold; font-size: 1rem; }
+    .header-sub   { color: var(--muted); font-size: 0.72rem; margin-top: 1px; }
+
+    /* ── TABS ── */
+    .tabs { display: flex; gap: 6px; margin-left: auto; }
+    .tab {
+      background: transparent; color: var(--muted);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 5px 13px; font-size: 0.74rem; cursor: pointer;
+      font-family: var(--font); transition: all 0.15s;
+    }
+    .tab.active { background: var(--gold); color: #06080f; font-weight: bold; border-color: var(--gold); }
+
+    /* ── MAIN ── */
+    .main { max-width: 900px; margin: 0 auto; padding: 28px 14px 60px; }
+
+    /* ── LOADING ── */
+    .loading {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 60vh; gap: 16px;
+    }
+    .spinner {
+      width: 40px; height: 40px; border: 3px solid var(--border);
+      border-top-color: var(--gold); border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── SECTION HEADER ── */
+    .sec-head { margin-bottom: 22px; }
+    .sec-head h2 { color: var(--gold-light); font-size: 1.4rem; display: flex; align-items: center; gap: 10px; }
+    .sec-head p  { color: var(--muted); font-size: 0.84rem; margin-top: 4px; margin-left: 36px; }
+
+    /* ── DIVIDER ── */
+    .divider {
+      display: flex; align-items: center; gap: 10px; margin: 24px 0 14px;
+    }
+    .divider-line { height: 1px; flex: 1; background: var(--border); }
+    .divider-label { color: var(--gold); font-size: 0.74rem; font-weight: bold; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
+
+    /* ── POENGTAVLE ── */
+    .poengtavle { display: flex; flex-direction: column; gap: 8px; }
+    .poeng-rad {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 16px; transition: border-color 0.2s;
+    }
+    .poeng-rad.topp { border-color: var(--gold); background: linear-gradient(135deg, var(--surface), #1a1f0d); }
+    .poeng-rad.topp2 { border-color: #888; }
+    .poeng-rad.topp3 { border-color: #a0522d; }
+    .poeng-plass { font-size: 1.2rem; width: 32px; text-align: center; flex-shrink: 0; }
+    .poeng-navn { flex: 1; font-weight: bold; font-size: 0.95rem; }
+    .poeng-detalj { color: var(--muted); font-size: 0.78rem; margin-top: 2px; }
+    .poeng-tall {
+      font-size: 1.4rem; font-weight: bold; color: var(--gold-light);
+      min-width: 50px; text-align: right;
+    }
+    .poeng-suffix { color: var(--muted); font-size: 0.72rem; }
+    .ingen-fasit {
+      background: var(--faint); border: 1px solid var(--border);
+      border-radius: 10px; padding: 20px; text-align: center; color: var(--muted);
+      font-size: 0.88rem; line-height: 1.7;
+    }
+
+    /* ── SPØRSMÅL-OVERSIKT ── */
+    .sporsmal-grid { display: flex; flex-direction: column; gap: 12px; }
+    .sporsmal-kort {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px 18px;
+    }
+    .sporsmal-tittel { color: var(--gold); font-size: 0.76rem; font-weight: bold; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; }
+    .bar-rad { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+    .bar-label { color: var(--text); font-size: 0.84rem; min-width: 160px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bar-wrap { flex: 1; background: var(--faint); border-radius: 4px; height: 20px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; display: flex; align-items: center; padding-left: 8px; }
+    .bar-count { color: var(--muted); font-size: 0.76rem; min-width: 40px; text-align: right; flex-shrink: 0; }
+
+    /* ── KAMPOVERSIKT ── */
+    .kamp-filter { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+    .kamp-filter-btn {
+      background: var(--surface); color: var(--muted);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 5px 12px; font-size: 0.76rem; cursor: pointer; font-family: var(--font);
+    }
+    .kamp-filter-btn.active { background: var(--gold); color: #06080f; border-color: var(--gold); font-weight: bold; }
+    .kamper-liste { display: flex; flex-direction: column; gap: 8px; }
+    .kamp-rad {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 9px; padding: 12px 14px;
+    }
+    .kamp-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .kamp-gruppe { background: var(--faint); color: var(--gold); font-weight: bold; border-radius: 4px; padding: 1px 8px; font-size: 0.74rem; }
+    .kamp-navn { font-size: 0.88rem; font-weight: bold; color: var(--text); }
+    .kamp-dato { color: var(--muted); font-size: 0.76rem; margin-left: auto; }
+    .kamp-bars { display: flex; gap: 6px; }
+    .kamp-bar-item { flex: 1; text-align: center; }
+    .kamp-bar-outer { background: var(--faint); border-radius: 6px; height: 36px; display: flex; align-items: flex-end; overflow: hidden; margin-bottom: 4px; }
+    .kamp-bar-inner { width: 100%; border-radius: 6px; transition: height 0.5s ease; }
+    .kamp-bar-label { font-size: 0.72rem; font-weight: bold; }
+    .kamp-bar-pct { font-size: 0.76rem; color: var(--muted); margin-top: 2px; }
+
+    /* ── NORGE ── */
+    .norge-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 500px) { .norge-grid { grid-template-columns: 1fr; } }
+    .norge-kort {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px 18px;
+    }
+    .norge-tittel { color: var(--norway); font-size: 0.76rem; font-weight: bold; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 600px) {
+      .bar-label { min-width: 110px; font-size: 0.78rem; }
+      .tabs .tab { padding: 5px 8px; font-size: 0.68rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <span style="font-size:1.4rem">⚽</span>
+  <div>
+    <div class="header-title">VM 2026 — Tippekonkurranse</div>
+    <div class="header-sub" id="header-sub">Laster data...</div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="visTab('poengtavle')">🏆 Poengtavle</button>
+    <button class="tab" onclick="visTab('sporsmal')">📋 Spørsmål</button>
+    <button class="tab" onclick="visTab('kamper')">⚽ Kamper</button>
+    <button class="tab" onclick="visTab('norge')">🇳🇴 Norge</button>
+  </div>
+</div>
+
+<div class="main" id="main">
+  <div class="loading">
+    <div class="spinner"></div>
+    <div style="color:var(--muted);font-size:0.88rem">Henter tippedata...</div>
+  </div>
+</div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbxsdfcoNzSzV8bI98TJKG7csyFUs8NhQE1uxTHvGaCeWq5EXflNEIZ_uO6AzzFEYFTgag/exec";
+
+const KAMPER_LISTE = [
+  {dato:"11. jun",gruppe:"A",kamp:"Mexico-Sør-Afrika"},
+  {dato:"11. jun",gruppe:"A",kamp:"Sør-Korea-Tsjekkia"},
+  {dato:"12. jun",gruppe:"B",kamp:"Canada-Bosnia-H."},
+  {dato:"12. jun",gruppe:"D",kamp:"USA-Paraguay"},
+  {dato:"13. jun",gruppe:"B",kamp:"Qatar-Sveits"},
+  {dato:"13. jun",gruppe:"C",kamp:"Brasil-Marokko"},
+  {dato:"13. jun",gruppe:"C",kamp:"Haiti-Skottland"},
+  {dato:"14. jun",gruppe:"D",kamp:"Australia-Tyrkia"},
+  {dato:"14. jun",gruppe:"E",kamp:"Tyskland-Curaçao"},
+  {dato:"14. jun",gruppe:"F",kamp:"Nederland-Japan"},
+  {dato:"14. jun",gruppe:"E",kamp:"Elfenbenskyst.-Ecuador"},
+  {dato:"14. jun",gruppe:"F",kamp:"Sverige-Tunisia"},
+  {dato:"15. jun",gruppe:"H",kamp:"Spania-Kapp Verde"},
+  {dato:"15. jun",gruppe:"G",kamp:"Belgia-Egypt"},
+  {dato:"15. jun",gruppe:"H",kamp:"Saudi-Arabia-Uruguay"},
+  {dato:"15. jun",gruppe:"G",kamp:"Iran-New Zealand"},
+  {dato:"16. jun",gruppe:"I",kamp:"Frankrike-Senegal"},
+  {dato:"16. jun",gruppe:"I",kamp:"Irak-Norge"},
+  {dato:"16. jun",gruppe:"J",kamp:"Argentina-Algeria"},
+  {dato:"17. jun",gruppe:"J",kamp:"Østerrike-Jordan"},
+  {dato:"17. jun",gruppe:"K",kamp:"Portugal-DR Kongo"},
+  {dato:"17. jun",gruppe:"L",kamp:"England-Kroatia"},
+  {dato:"17. jun",gruppe:"L",kamp:"Ghana-Panama"},
+  {dato:"17. jun",gruppe:"K",kamp:"Uzbekistan-Colombia"},
+  {dato:"18. jun",gruppe:"A",kamp:"Tsjekkia-Sør-Afrika"},
+  {dato:"18. jun",gruppe:"B",kamp:"Sveits-Bosnia-H."},
+  {dato:"18. jun",gruppe:"B",kamp:"Canada-Qatar"},
+  {dato:"18. jun",gruppe:"A",kamp:"Mexico-Sør-Korea"},
+  {dato:"19. jun",gruppe:"D",kamp:"USA-Australia"},
+  {dato:"19. jun",gruppe:"C",kamp:"Skottland-Marokko"},
+  {dato:"19. jun",gruppe:"C",kamp:"Brasil-Haiti"},
+  {dato:"19. jun",gruppe:"D",kamp:"Tyrkia-Paraguay"},
+  {dato:"20. jun",gruppe:"F",kamp:"Nederland-Sverige"},
+  {dato:"20. jun",gruppe:"E",kamp:"Tyskland-Elfenbenskyst."},
+  {dato:"20. jun",gruppe:"E",kamp:"Ecuador-Curaçao"},
+  {dato:"20. jun",gruppe:"F",kamp:"Tunisia-Japan"},
+  {dato:"21. jun",gruppe:"H",kamp:"Spania-Saudi-Arabia"},
+  {dato:"21. jun",gruppe:"G",kamp:"Belgia-Iran"},
+  {dato:"21. jun",gruppe:"H",kamp:"Uruguay-Kapp Verde"},
+  {dato:"21. jun",gruppe:"G",kamp:"New Zealand-Egypt"},
+  {dato:"22. jun",gruppe:"I",kamp:"Frankrike-Irak"},
+  {dato:"22. jun",gruppe:"I",kamp:"Norge-Senegal"},
+  {dato:"22. jun",gruppe:"J",kamp:"Argentina-Østerrike"},
+  {dato:"23. jun",gruppe:"J",kamp:"Jordan-Algeria"},
+  {dato:"23. jun",gruppe:"K",kamp:"Portugal-Uzbekistan"},
+  {dato:"23. jun",gruppe:"L",kamp:"England-Ghana"},
+  {dato:"23. jun",gruppe:"L",kamp:"Panama-Kroatia"},
+  {dato:"23. jun",gruppe:"K",kamp:"Colombia-DR Kongo"},
+  {dato:"24. jun",gruppe:"A",kamp:"Mexico-Tsjekkia"},
+  {dato:"24. jun",gruppe:"A",kamp:"Sør-Afrika-Sør-Korea"},
+  {dato:"24. jun",gruppe:"B",kamp:"Bosnia-H.-Qatar"},
+  {dato:"24. jun",gruppe:"B",kamp:"Sveits-Canada"},
+  {dato:"25. jun",gruppe:"C",kamp:"Brasil-Skottland"},
+  {dato:"25. jun",gruppe:"C",kamp:"Marokko-Haiti"},
+  {dato:"25. jun",gruppe:"D",kamp:"USA-Tyrkia"},
+  {dato:"25. jun",gruppe:"D",kamp:"Paraguay-Australia"},
+  {dato:"26. jun",gruppe:"E",kamp:"Tyskland-Ecuador"},
+  {dato:"26. jun",gruppe:"E",kamp:"Curaçao-Elfenbenskyst."},
+  {dato:"26. jun",gruppe:"F",kamp:"Nederland-Tunisia"},
+  {dato:"26. jun",gruppe:"F",kamp:"Japan-Sverige"},
+  {dato:"27. jun",gruppe:"G",kamp:"Belgia-New Zealand"},
+  {dato:"27. jun",gruppe:"G",kamp:"Egypt-Iran"},
+  {dato:"27. jun",gruppe:"H",kamp:"Spania-Uruguay"},
+  {dato:"27. jun",gruppe:"H",kamp:"Kapp Verde-Saudi-Arabia"},
+  {dato:"27. jun",gruppe:"I",kamp:"Frankrike-Norge"},
+  {dato:"27. jun",gruppe:"I",kamp:"Senegal-Irak"},
+  {dato:"27. jun",gruppe:"J",kamp:"Argentina-Jordan"},
+  {dato:"27. jun",gruppe:"J",kamp:"Algeria-Østerrike"},
+  {dato:"27. jun",gruppe:"K",kamp:"Portugal-Colombia"},
+  {dato:"27. jun",gruppe:"K",kamp:"DR Kongo-Uzbekistan"},
+  {dato:"27. jun",gruppe:"L",kamp:"England-Panama"},
+  {dato:"27. jun",gruppe:"L",kamp:"Kroatia-Ghana"},
+];
+
+const GRUPPER = ["Alle","A","B","C","D","E","F","G","H","I","J","K","L"];
+
+let DATA = null;
+let aktivTab = "poengtavle";
+let aktivGruppe = "Alle";
+
+async function lastData() {
+  try {
+    const resp = await fetch(API_URL);
+    DATA = await resp.json();
+    document.getElementById("header-sub").textContent =
+      DATA.svar.length + " deltakere · Oppdatert " + new Date().toLocaleTimeString("no-NO", {hour:"2-digit",minute:"2-digit"});
+    visTab(aktivTab);
+  } catch(e) {
+    document.getElementById("main").innerHTML =
+      '<div class="loading"><div style="color:var(--red)">⚠️ Kunne ikke hente data. Prøv å laste siden på nytt.</div></div>';
+  }
+}
+
+function visTab(tab) {
+  aktivTab = tab;
+  document.querySelectorAll(".tab").forEach((t,i) => {
+    t.classList.toggle("active", ["poengtavle","sporsmal","kamper","norge"][i] === tab);
+  });
+  const main = document.getElementById("main");
+  if (!DATA) return;
+  if (tab === "poengtavle") main.innerHTML = byggPoengtavle();
+  if (tab === "sporsmal")   main.innerHTML = byggSporsmal();
+  if (tab === "kamper")     { main.innerHTML = byggKamper(); oppdaterKampFilter(); }
+  if (tab === "norge")      main.innerHTML = byggNorge();
+}
+
+// ── POENGBEREGNING ──────────────────────────────────────────────────────────
+function beregnPoeng(svar, fasit) {
+  let p = 0;
+  const harFasit = fasit && Object.keys(fasit).length > 2;
+  if (!harFasit) return null;
+
+  // VM-vinner (10p)
+  if (svar["VM-vinner (10p)"] && fasit["VM-vinner (10p)"] &&
+      svar["VM-vinner (10p)"] === fasit["VM-vinner (10p)"]) p += 10;
+
+  // Semifinalister (4p per riktig, maks 4)
+  const semiSvar  = (svar["Semifinalister (4p×4)"] || "").split(", ").map(s=>s.trim()).filter(Boolean);
+  const semiFasit = (fasit["Semifinalister (4p×4)"] || "").split(", ").map(s=>s.trim()).filter(Boolean);
+  semiSvar.forEach(l => { if (semiFasit.includes(l)) p += 4; });
+
+  // Toppscorer (6p)
+  if (svar["Toppscorer (6p)"] && fasit["Toppscorer (6p)"] &&
+      svar["Toppscorer (6p)"].toLowerCase().trim() === fasit["Toppscorer (6p)"].toLowerCase().trim()) p += 6;
+
+  // Gruppevinnere (3p)
+  ["A","B","C","D","E","F","G","H","I","J","K","L"].forEach(g => {
+    const k = `GW-${g} (3p)`;
+    if (svar[k] && fasit[k] && svar[k] === fasit[k]) p += 3;
+  });
+
+  // Norge-runde (4p)
+  if (svar["Norge-runde (4p)"] && fasit["Norge-runde (4p)"] &&
+      svar["Norge-runde (4p)"] === fasit["Norge-runde (4p)"]) p += 4;
+
+  // Haaland O/U (3p)
+  if (svar["Haaland O/U 3.5 (3p)"] && fasit["Haaland O/U 3.5 (3p)"] &&
+      svar["Haaland O/U 3.5 (3p)"] === fasit["Haaland O/U 3.5 (3p)"]) p += 3;
+
+  // Norge-poeng (3p)
+  if (svar["Norge-poeng (3p)"] && fasit["Norge-poeng (3p)"] &&
+      String(svar["Norge-poeng (3p)"]) === String(fasit["Norge-poeng (3p)"])) p += 3;
+
+  // Kane O/U (3p)
+  if (svar["Kane O/U 4.5 (3p)"] && fasit["Kane O/U 4.5 (3p)"] &&
+      svar["Kane O/U 4.5 (3p)"] === fasit["Kane O/U 4.5 (3p)"]) p += 3;
+
+  // Mbappé O/U (3p)
+  if (svar["Mbappé O/U 4.5 (3p)"] && fasit["Mbappé O/U 4.5 (3p)"] &&
+      svar["Mbappé O/U 4.5 (3p)"] === fasit["Mbappé O/U 4.5 (3p)"]) p += 3;
+
+  // Kampresultater (2p per riktig)
+  KAMPER_LISTE.forEach(km => {
+    const s = svar[km.kamp];
+    const f = fasit[km.kamp];
+    if (s && f && s === f) p += 2;
+  });
+
+  return p;
+}
+
+// ── POENGTAVLE ──────────────────────────────────────────────────────────────
+function byggPoengtavle() {
+  const fasit = DATA.fasit;
+  const harFasit = fasit && Object.keys(fasit).length > 2;
+
+  let html = '<div class="sec-head"><h2><span>🏆</span> Poengtavle</h2><p>Rangert etter poeng — oppdateres etter hvert som kamper spilles</p></div>';
+
+  if (!harFasit) {
+    html += `<div class="ingen-fasit">
+      ⏳ Fasit er ikke lagt inn ennå.<br>
+      Poengtavlen oppdateres etter hvert som kampresultater fylles inn i Fasit-fanen i Google Sheets.
+    </div>`;
+    // Vis alfabetisk liste over deltakere i stedet
+    html += '<div class="divider"><div class="divider-line"></div><span class="divider-label">Alle deltakere</span><div class="divider-line"></div></div>';
+    html += '<div class="poengtavle">';
+    DATA.svar.forEach((s, i) => {
+      html += `<div class="poeng-rad">
+        <div class="poeng-plass" style="color:var(--muted)">${i+1}</div>
+        <div><div class="poeng-navn">${s["Navn"] || "—"}</div></div>
+      </div>`;
+    });
+    html += '</div>';
+    return html;
+  }
+
+  // Beregn og sorter
+  const medPoeng = DATA.svar.map(s => ({
+    navn: s["Navn"] || "—",
+    poeng: beregnPoeng(s, fasit),
+    vmVinner: s["VM-vinner (10p)"] || "—",
+  })).sort((a,b) => (b.poeng||0) - (a.poeng||0));
+
+  html += '<div class="poengtavle">';
+  medPoeng.forEach((d, i) => {
+    const plassklass = i===0?"topp":i===1?"topp2":i===2?"topp3":"";
+    const plasskikon = i===0?"🥇":i===1?"🥈":i===2?"🥉":`${i+1}.`;
+    html += `<div class="poeng-rad ${plassklass}">
+      <div class="poeng-plass">${plasskikon}</div>
+      <div style="flex:1">
+        <div class="poeng-navn">${d.navn}</div>
+        <div class="poeng-detalj">VM-vinner: ${d.vmVinner}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="poeng-tall">${d.poeng}</div>
+        <div class="poeng-suffix">poeng</div>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+// ── SPØRSMÅL-OVERSIKT ────────────────────────────────────────────────────────
+function byggSporsmal() {
+  const svar = DATA.svar;
+  const n = svar.length;
+
+  function tell(felt) {
+    const teller = {};
+    svar.forEach(s => {
+      const v = (s[felt]||"").toString().trim();
+      if (v) teller[v] = (teller[v]||0) + 1;
+    });
+    return Object.entries(teller).sort((a,b)=>b[1]-a[1]);
+  }
+
+  function barFarge(i) {
+    const farger = ["#c8a84b","#3dba6e","#e05050","#d4a017","#7b68ee","#20b2aa","#ff8c00","#da70d6"];
+    return farger[i % farger.length];
+  }
+
+  function lagBars(felt, tittel, maks=8) {
+    const data = tell(felt).slice(0, maks);
+    if (!data.length) return '';
+    let html = `<div class="sporsmal-kort"><div class="sporsmal-tittel">${tittel}</div>`;
+    data.forEach(([label, antall], i) => {
+      const pct = Math.round((antall/n)*100);
+      const farge = barFarge(i);
+      html += `<div class="bar-rad">
+        <div class="bar-label" title="${label}">${label}</div>
+        <div class="bar-wrap">
+          <div class="bar-fill" style="width:${pct}%;background:${farge}20;border-left:3px solid ${farge}">
+            <span style="color:${farge};font-size:0.72rem;font-weight:bold">${pct}%</span>
+          </div>
+        </div>
+        <div class="bar-count">${antall}/${n}</div>
+      </div>`;
+    });
+    html += '</div>';
+    return html;
+  }
+
+  function lagOU(felt, tittel) {
+    const over  = svar.filter(s => (s[felt]||"").toString().includes("Over")).length;
+    const under = svar.filter(s => (s[felt]||"").toString().includes("Under")).length;
+    const tot = over + under;
+    if (!tot) return '';
+    const pOver  = Math.round((over/tot)*100);
+    const pUnder = Math.round((under/tot)*100);
+    return `<div class="sporsmal-kort">
+      <div class="sporsmal-tittel">${tittel}</div>
+      <div class="bar-rad">
+        <div class="bar-label">Over</div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${pOver}%;background:var(--green-dim);border-left:3px solid var(--green)"><span style="color:var(--green);font-size:0.72rem;font-weight:bold">${pOver}%</span></div></div>
+        <div class="bar-count">${over}/${n}</div>
+      </div>
+      <div class="bar-rad">
+        <div class="bar-label">Under</div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${pUnder}%;background:var(--red-dim);border-left:3px solid var(--red)"><span style="color:var(--red);font-size:0.72rem;font-weight:bold">${pUnder}%</span></div></div>
+        <div class="bar-count">${under}/${n}</div>
+      </div>
+    </div>`;
+  }
+
+  let html = '<div class="sec-head"><h2><span>📋</span> Spørsmålsoversikt</h2><p>Hva tippet deltakerne?</p></div>';
+  html += '<div class="sporsmal-grid">';
+
+  html += lagBars("VM-vinner (10p)", "🏆 VM-vinner (10p)");
+
+  // Semifinalister
+  const semiTeller = {};
+  svar.forEach(s => {
+    const semi = (s["Semifinalister (4p×4)"]||"").split(",").map(x=>x.trim()).filter(Boolean);
+    semi.forEach(l => { semiTeller[l] = (semiTeller[l]||0)+1; });
+  });
+  const semiSortert = Object.entries(semiTeller).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  if (semiSortert.length) {
+    html += '<div class="sporsmal-kort"><div class="sporsmal-tittel">🥈 Semifinalister (4p per riktig) — topp 10</div>';
+    semiSortert.forEach(([label,antall],i) => {
+      const pct = Math.round((antall/n)*100);
+      const farge = barFarge(i);
+      html += `<div class="bar-rad">
+        <div class="bar-label">${label}</div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${pct}%;background:${farge}20;border-left:3px solid ${farge}"><span style="color:${farge};font-size:0.72rem;font-weight:bold">${pct}%</span></div></div>
+        <div class="bar-count">${antall}/${n}</div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  // Toppscorer
+  html += lagBars("Toppscorer (6p)", "⚽ Toppscorer / Golden Boot (6p)", 10);
+
+  // Gruppevinnere
+  html += '<div class="divider"><div class="divider-line"></div><span class="divider-label">Gruppevinnere — 3p per riktig</span><div class="divider-line"></div></div>';
+  ["A","B","C","D","E","F","G","H","I","J","K","L"].forEach(g => {
+    html += lagBars(`GW-${g} (3p)`, `Gruppe ${g}-vinner`);
+  });
+
+  html += '</div>';
+  return html;
+}
+
+// ── KAMPOVERSIKT ─────────────────────────────────────────────────────────────
+function byggKamper() {
+  let html = '<div class="sec-head"><h2><span>⚽</span> Kampoversikt</h2><p>Fordeling av tips per kamp (1/X/2)</p></div>';
+  html += '<div class="kamp-filter">';
+  GRUPPER.forEach(g => {
+    html += `<button class="kamp-filter-btn${g===aktivGruppe?" active":""}" onclick="filtrerGruppe('${g}')">${g==="Alle"?"Alle grupper":"Gruppe "+g}</button>`;
+  });
+  html += '</div><div class="kamper-liste" id="kamper-liste"></div>';
+  return html;
+}
+
+function oppdaterKampFilter() {
+  const liste = document.getElementById("kamper-liste");
+  if (!liste) return;
+  const svar = DATA.svar;
+  const n = svar.length;
+  const filtrert = KAMPER_LISTE.filter(k => aktivGruppe === "Alle" || k.gruppe === aktivGruppe);
+
+  let html = '';
+  let sisteDato = null;
+  filtrert.forEach(km => {
+    if (km.dato !== sisteDato) {
+      if (sisteDato) html += '';
+      sisteDato = km.dato;
+    }
+    const en   = svar.filter(s => s[km.kamp] === "1").length;
+    const x    = svar.filter(s => s[km.kamp] === "X").length;
+    const to   = svar.filter(s => s[km.kamp] === "2").length;
+    const tot  = en + x + to || 1;
+    const pEn  = Math.round((en/tot)*100);
+    const pX   = Math.round((x/tot)*100);
+    const pTo  = Math.round((to/tot)*100);
+    const parts = km.kamp.split("-");
+    const hjemme = parts[0];
+    const borte  = parts.slice(1).join("-");
+    html += `<div class="kamp-rad">
+      <div class="kamp-header">
+        <span class="kamp-gruppe">${km.gruppe}</span>
+        <span class="kamp-navn">${hjemme} vs ${borte}</span>
+        <span class="kamp-dato">${km.dato}</span>
+      </div>
+      <div class="kamp-bars">
+        <div class="kamp-bar-item">
+          <div class="kamp-bar-outer"><div class="kamp-bar-inner" style="height:${pEn}%;background:var(--green);opacity:0.8"></div></div>
+          <div class="kamp-bar-label" style="color:var(--green)">1</div>
+          <div class="kamp-bar-pct">${pEn}% (${en})</div>
+        </div>
+        <div class="kamp-bar-item">
+          <div class="kamp-bar-outer"><div class="kamp-bar-inner" style="height:${pX}%;background:var(--yellow);opacity:0.8"></div></div>
+          <div class="kamp-bar-label" style="color:var(--yellow)">X</div>
+          <div class="kamp-bar-pct">${pX}% (${x})</div>
+        </div>
+        <div class="kamp-bar-item">
+          <div class="kamp-bar-outer"><div class="kamp-bar-inner" style="height:${pTo}%;background:var(--red);opacity:0.8"></div></div>
+          <div class="kamp-bar-label" style="color:var(--red)">2</div>
+          <div class="kamp-bar-pct">${pTo}% (${to})</div>
+        </div>
+      </div>
+    </div>`;
+  });
+  liste.innerHTML = html;
+}
+
+function filtrerGruppe(g) {
+  aktivGruppe = g;
+  document.querySelectorAll(".kamp-filter-btn").forEach(b => {
+    b.classList.toggle("active", b.textContent === (g==="Alle"?"Alle grupper":"Gruppe "+g));
+  });
+  oppdaterKampFilter();
+}
+
+// ── NORGE-FANE ───────────────────────────────────────────────────────────────
+function byggNorge() {
+  const svar = DATA.svar;
+  const n = svar.length;
+
+  function lagOU(felt, tittel, linje) {
+    const over  = svar.filter(s => (s[felt]||"").toString().includes("Over")).length;
+    const under = svar.filter(s => (s[felt]||"").toString().includes("Under")).length;
+    const tot = over + under || 1;
+    return `<div class="norge-kort">
+      <div class="norge-tittel">${tittel}</div>
+      <div class="bar-rad">
+        <div class="bar-label">Over ${linje}</div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(over/tot*100)}%;background:var(--green-dim);border-left:3px solid var(--green)"><span style="color:var(--green);font-size:0.72rem;font-weight:bold">${Math.round(over/tot*100)}%</span></div></div>
+        <div class="bar-count">${over}</div>
+      </div>
+      <div class="bar-rad">
+        <div class="bar-label">Under ${linje}</div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(under/tot*100)}%;background:var(--red-dim);border-left:3px solid var(--red)"><span style="color:var(--red);font-size:0.72rem;font-weight:bold">${Math.round(under/tot*100)}%</span></div></div>
+        <div class="bar-count">${under}</div>
+      </div>
+    </div>`;
+  }
+
+  // Norge runde
+  const rundeTeller = {};
+  svar.forEach(s => {
+    const v = (s["Norge-runde (4p)"]||"").trim();
+    if (v) rundeTeller[v] = (rundeTeller[v]||0)+1;
+  });
+  const rundeSort = Object.entries(rundeTeller).sort((a,b) => {
+    const order = ["Gruppespill (ute)","Runde av 32","Runde av 16","Kvartfinale","Semifinale","Finale (2. plass)","VM-VINNER 🏆"];
+    return order.indexOf(a[0]) - order.indexOf(b[0]);
+  });
+
+  // Norge poeng
+  const poengTeller = {};
+  svar.forEach(s => {
+    const v = String(s["Norge-poeng (3p)"]||"").trim();
+    if (v) poengTeller[v] = (poengTeller[v]||0)+1;
+  });
+  const poengSort = Object.entries(poengTeller).sort((a,b)=>Number(a[0])-Number(b[0]));
+
+  let html = '<div class="sec-head"><h2><span>🇳🇴</span> Norge</h2><p>Hva tror deltakerne om det norske laget?</p></div>';
+  html += '<div class="norge-grid">';
+
+  // Runde
+  html += '<div class="norge-kort" style="grid-column:1/-1"><div class="norge-tittel">Hvor langt kommer Norge? (4p)</div>';
+  rundeSort.forEach(([label,antall],i) => {
+    const pct = Math.round((antall/n)*100);
+    const farger = ["#e05050","#566070","#d4a017","#c8a84b","#3dba6e","#e8c96a","#fff"];
+    const farge = farger[["Gruppespill (ute)","Runde av 32","Runde av 16","Kvartfinale","Semifinale","Finale (2. plass)","VM-VINNER 🏆"].indexOf(label)] || "#c8a84b";
+    html += `<div class="bar-rad">
+      <div class="bar-label">${label}</div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:${pct}%;background:${farge}20;border-left:3px solid ${farge}"><span style="color:${farge};font-size:0.72rem;font-weight:bold">${pct}%</span></div></div>
+      <div class="bar-count">${antall}/${n}</div>
+    </div>`;
+  });
+  html += '</div>';
+
+  // Haaland O/U
+  html += lagOU("Haaland O/U 3.5 (3p)", "Erling Braut Haaland O/U (3p)", "3.5 mål");
+
+  // Norge gruppepoeng
+  html += '<div class="norge-kort"><div class="norge-tittel">Norges gruppepoeng (3p)</div>';
+  poengSort.forEach(([label,antall]) => {
+    const pct = Math.round((antall/n)*100);
+    html += `<div class="bar-rad">
+      <div class="bar-label">${label} poeng</div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:${pct}%;background:var(--gold-glow);border-left:3px solid var(--gold)"><span style="color:var(--gold);font-size:0.72rem;font-weight:bold">${pct}%</span></div></div>
+      <div class="bar-count">${antall}</div>
+    </div>`;
+  });
+  html += '</div>';
+
+  html += '</div>';
+  return html;
+}
+
+// Start
+lastData();
+</script>
+</body>
+</html>
