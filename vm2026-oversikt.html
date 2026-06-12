@@ -335,8 +335,8 @@ function beregnPoeng(svar, fasit) {
 
   // Kampresultater (2p per riktig)
   KAMPER_LISTE.forEach(km => {
-    const s = svar[km.kamp];
-    const f = fasit[km.kamp];
+    const s = String(svar[km.kamp]||"").trim();
+    const f = String(fasit[km.kamp]||"").trim();
     if (s && f && s === f) p += 2;
   });
 
@@ -521,9 +521,9 @@ function oppdaterKampFilter() {
       if (sisteDato) html += '';
       sisteDato = km.dato;
     }
-    const en   = svar.filter(s => s[km.kamp] === "1").length;
-    const x    = svar.filter(s => s[km.kamp] === "X").length;
-    const to   = svar.filter(s => s[km.kamp] === "2").length;
+    const en   = svar.filter(s => String(s[km.kamp]).trim() === "1").length;
+    const x    = svar.filter(s => String(s[km.kamp]).trim() === "X").length;
+    const to   = svar.filter(s => String(s[km.kamp]).trim() === "2").length;
     const tot  = en + x + to || 1;
     const pEn  = Math.round((en/tot)*100);
     const pX   = Math.round((x/tot)*100);
