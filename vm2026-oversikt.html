@@ -420,6 +420,7 @@ function oppdaterKampFilter() {
   const liste = document.getElementById("kamper-liste");
   if (!liste) return;
   const svar = DATA.svar;
+  const fasit = DATA.fasit || {};
   const filtrert = KAMPER_LISTE.filter(k => aktivGruppe === "Alle" || k.gruppe === aktivGruppe);
   let html = '';
   filtrert.forEach((km, idx) => {
@@ -434,27 +435,42 @@ function oppdaterKampFilter() {
     const parts = km.kamp.split("-");
     const hjemme = parts[0], borte = parts.slice(1).join("-");
     const id = "kamp-det-"+idx;
-    html += `<div class="kamp-rad">
+
+    // Fasit og ferdig-badge
+    const fasitUtfall = String(fasit[km.kamp]||"").trim();
+    const erFerdig = fasitUtfall==="1"||fasitUtfall==="X"||fasitUtfall==="2";
+    const fasitFarge = fasitUtfall==="1"?"var(--green)":fasitUtfall==="X"?"var(--yellow)":"var(--red)";
+    const fasitTekst = fasitUtfall==="1"?`${hjemme} vinner`:fasitUtfall==="X"?"Uavgjort":fasitUtfall==="2"?`${borte} vinner`:"";
+    const ferdigBadge = erFerdig
+      ? `<span style="background:${fasitFarge.replace("var(","").replace(")","")};opacity:0.15;display:none"></span><span style="color:${fasitFarge};border:1px solid ${fasitFarge};border-radius:12px;padding:2px 9px;font-size:0.72rem;font-weight:bold;flex-shrink:0;background:rgba(0,0,0,0.3)">✓ ${fasitUtfall} — ${fasitTekst}</span>`
+      : `<span style="color:var(--muted);font-size:0.72rem;flex-shrink:0;font-style:italic">Ikke spilt ennå</span>`;
+    const enOp  = erFerdig?(fasitUtfall==="1"?"1":"0.25"):"0.8";
+    const xOp   = erFerdig?(fasitUtfall==="X"?"1":"0.25"):"0.8";
+    const toOp  = erFerdig?(fasitUtfall==="2"?"1":"0.25"):"0.8";
+    const kortBorder = erFerdig?`border-left:3px solid ${fasitFarge}`:"";
+
+    html += `<div class="kamp-rad" style="${kortBorder}">
       <div class="kamp-rad-header" onclick="toggleDetaljer('${id}')">
         <div class="kamp-header">
           <span class="kamp-gruppe">${km.gruppe}</span>
           <span class="kamp-navn">${hjemme} vs ${borte}</span>
           <span class="kamp-dato">${km.dato}</span>
+          ${ferdigBadge}
         </div>
         <div class="kamp-bars">
           <div class="kamp-bar-item">
-            <div class="kamp-bar-outer"><div class="kamp-bar-inner" style="height:${pEn}%;background:var(--green);opacity:0.8"></div></div>
-            <div class="kamp-bar-label" style="color:var(--green)">1</div>
+            <div class="kamp-bar-outer"><div class="kamp-bar-inner" style="height:${pEn}%;background:var(--green);opacity:${enOp}"></div></div>
+            <div class="kamp-bar-label" style="color:var(--green);opacity:${enOp}">1</div>
             <div class="kamp-bar-pct">${pEn}% (${en})</div>
           </div>
           <div class="kamp-bar-item">
-            <div class="kamp-bar-outer"><div class="kamp-bar-inner" style="height:${pX}%;background:var(--yellow);opacity:0.8"></div></div>
-            <div class="kamp-bar-label" style="color:var(--yellow)">X</div>
+            <div class="kamp-bar-outer"><div class="kamp-bar-inner" style="height:${pX}%;background:var(--yellow);opacity:${xOp}"></div></div>
+            <div class="kamp-bar-label" style="color:var(--yellow);opacity:${xOp}">X</div>
             <div class="kamp-bar-pct">${pX}% (${x})</div>
           </div>
           <div class="kamp-bar-item">
-            <div class="kamp-bar-outer"><div class="kamp-bar-inner" style="height:${pTo}%;background:var(--red);opacity:0.8"></div></div>
-            <div class="kamp-bar-label" style="color:var(--red)">2</div>
+            <div class="kamp-bar-outer"><div class="kamp-bar-inner" style="height:${pTo}%;background:var(--red);opacity:${toOp}"></div></div>
+            <div class="kamp-bar-label" style="color:var(--red);opacity:${toOp}">2</div>
             <div class="kamp-bar-pct">${pTo}% (${to})</div>
           </div>
         </div>
