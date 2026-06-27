@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VM 2026 — Sluttspillsbracket</title>
+  <style>
+    *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#06080f; --surface:#0c1120; --surfaceHi:#111b30;
+      --border:#1c2b45; --borderHi:#2a3f60;
+      --gold:#c8a84b; --goldLight:#e8c96a; --goldGlow:rgba(200,168,75,0.15);
+      --text:#ddd8c8; --muted:#566070; --faint:#1a2235;
+      --green:#3dba6e; --greenDim:#0d2a1a;
+      --font:'Georgia','Times New Roman',serif;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font); min-height:100vh; }
+    select option { background:#0c1120; color:#ddd8c8; }
+    ::-webkit-scrollbar { height:8px; }
+    ::-webkit-scrollbar-track { background:var(--bg); }
+    ::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
+
+    /* ── HEADER ── */
+    .header { background:var(--surface); border-bottom:2px solid var(--gold); padding:11px 18px; display:flex; align-items:center; gap:14px; position:sticky; top:0; z-index:200; box-shadow:0 2px 20px rgba(0,0,0,0.5); flex-wrap:wrap; }
+    .header-title { color:var(--goldLight); font-weight:bold; font-size:0.95rem; }
+    .header-sub { color:var(--muted); font-size:0.72rem; }
+    .header-progress { margin-left:auto; color:var(--gold); font-size:0.78rem; font-weight:bold; }
+
+    /* ── LANDING ── */
+    .landing { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2rem; position:relative; }
+    .landing::before { content:""; position:fixed; inset:0; background-image:radial-gradient(ellipse 60% 40% at 50% 0%, rgba(200,168,75,0.07) 0%, transparent 70%); pointer-events:none; }
+    .landing-inner { text-align:center; max-width:460px; position:relative; z-index:1; }
+    .landing-emoji { font-size:3.5rem; margin-bottom:10px; filter:drop-shadow(0 0 30px rgba(200,168,75,0.5)); }
+    .landing-title { color:var(--goldLight); font-size:2.6rem; font-weight:bold; letter-spacing:0.02em; line-height:1; }
+    .landing-sub { color:var(--muted); font-size:0.76rem; letter-spacing:0.2em; text-transform:uppercase; margin:8px 0 18px; }
+    .landing-points { background:#0d1929; border:1px solid #1a2d4a; border-radius:8px; padding:10px 16px; margin-bottom:24px; display:inline-block; font-size:0.78rem; color:var(--gold); line-height:1.7; }
+    .landing-points b { color:var(--goldLight); }
+    .landing-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:24px 26px; margin-bottom:20px; }
+    .landing-label { color:var(--gold); font-size:0.74rem; letter-spacing:0.12em; text-transform:uppercase; margin-bottom:8px; text-align:left; }
+    .landing-input { width:100%; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:11px 14px; color:var(--text); font-size:1rem; outline:none; box-sizing:border-box; font-family:var(--font); margin-bottom:14px; }
+    .landing-input:focus { border-color:var(--borderHi); }
+    .landing-btn { background:linear-gradient(135deg,var(--gold),var(--goldLight)); color:#06080f; border:none; border-radius:10px; padding:14px 40px; font-size:1rem; font-weight:bold; letter-spacing:0.07em; cursor:pointer; text-transform:uppercase; font-family:var(--font); }
+    .landing-btn:disabled { background:#1a2235; color:var(--muted); cursor:not-allowed; }
+
+    /* ── BRACKET TREE ── */
+    .bracket-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; padding:30px 16px 50px; width:100%; }
+    .bracket-tree { display:flex; align-items:center; justify-content:flex-start; gap:0; min-width:1400px; width:max-content; position:relative; }
+
+    .side { display:flex; flex-direction:column; gap:0; min-height:1px; }
+    .side.left { align-items:flex-end; }
+    .side.right { align-items:flex-start; }
+
+    .round-col { display:flex; flex-direction:column; justify-content:center; gap:14px; width:170px; flex-shrink:0; }
+    .round-col-label { text-align:center; color:var(--gold); font-size:0.68rem; font-weight:bold; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:8px; }
+
+    .matchup { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:6px; position:relative; }
+    .matchup.locked { opacity:0.45; }
+    .matchup-team { display:flex; align-items:center; gap:6px; padding:6px 8px; border-radius:6px; cursor:pointer; font-size:0.78rem; transition:all 0.12s; }
+    .matchup-team:hover { background:var(--faint); }
+    .matchup-team.selected { background:var(--greenDim); color:var(--green); font-weight:bold; }
+    .matchup-team.placeholder { color:var(--muted); font-style:italic; cursor:default; }
+    .matchup-team.placeholder:hover { background:transparent; }
+    .matchup-divider { height:1px; background:var(--border); margin:2px 4px; }
+    .flag { font-size:0.95rem; flex-shrink:0; }
+
+    /* Connector lines between rounds */
+    .connector-col { display:flex; flex-direction:column; justify-content:center; width:24px; flex-shrink:0; position:relative; }
+
+    /* Final / champion in center */
+    .center-col { display:flex; flex-direction:column; align-items:center; gap:16px; width:200px; flex-shrink:0; padding:0 10px; }
+    .final-label { color:var(--gold); font-size:0.7rem; font-weight:bold; letter-spacing:0.1em; text-transform:uppercase; }
+    .final-card { background:linear-gradient(135deg,var(--surface),#1a1f0d); border:1.5px solid var(--gold); border-radius:10px; padding:10px; width:100%; }
+    .champion-card { text-align:center; }
+    .champion-trophy { font-size:2.2rem; margin-bottom:4px; }
+    .champion-name { color:var(--goldLight); font-weight:bold; font-size:1.05rem; }
+    .champion-placeholder { color:var(--muted); font-style:italic; font-size:0.85rem; }
+
+    /* ── MOBILE ROUND VIEW (fallback under 700px sometimes preferred but we keep scroll) ── */
+    .hint-scroll { text-align:center; color:var(--muted); font-size:0.74rem; padding:8px 0 0; }
+
+    .main-bottom { max-width:480px; margin:0 auto; padding:0 16px 50px; }
+    .summary-box { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px; margin-bottom:16px; }
+    .summary-title { color:var(--gold); font-size:0.74rem; font-weight:bold; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:10px; }
+    .summary-row { display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--border); font-size:0.82rem; }
+    .nav-btn.submit { background:linear-gradient(135deg,var(--gold),var(--goldLight)); color:#06080f; border:none; font-weight:bold; padding:14px 36px; letter-spacing:0.06em; text-transform:uppercase; box-shadow:0 6px 24px var(--goldGlow); border-radius:10px; cursor:pointer; font-family:var(--font); font-size:1rem; }
+    .nav-btn.submit:disabled { background:#1a2235; color:var(--muted); cursor:not-allowed; }
+    .error-box { background:#2a0d0d; border:1px solid #e05050; border-radius:8px; padding:12px 16px; margin-bottom:16px; color:#e05050; font-size:0.85rem; }
+
+    .thankyou { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:2rem; }
+    .thankyou-inner { text-align:center; max-width:420px; }
+  </style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script>
+const SHEET_URL = "PASTE_SLUTTSPILL_APPS_SCRIPT_URL_HERE";
+
+const FLAGS = {
+  "Mexico":"🇲🇽","Sør-Korea":"🇰🇷","Sør-Afrika":"🇿🇦","Tsjekkia":"🇨🇿",
+  "Canada":"🇨🇦","Bosnia-Hercegovina":"🇧🇦","Qatar":"🇶🇦","Sveits":"🇨🇭",
+  "Brasil":"🇧🇷","Marokko":"🇲🇦","Haiti":"🇭🇹","Skottland":"🏴",
+  "USA":"🇺🇸","Paraguay":"🇵🇾","Australia":"🇦🇺","Tyrkia":"🇹🇷",
+  "Tyskland":"🇩🇪","Curaçao":"🇨🇼","Elfenbenskysten":"🇨🇮","Ecuador":"🇪🇨",
+  "Nederland":"🇳🇱","Japan":"🇯🇵","Sverige":"🇸🇪","Tunisia":"🇹🇳",
+  "Belgia":"🇧🇪","Egypt":"🇪🇬","Iran":"🇮🇷","New Zealand":"🇳🇿",
+  "Spania":"🇪🇸","Kapp Verde":"🇨🇻","Saudi-Arabia":"🇸🇦","Uruguay":"🇺🇾",
+  "Frankrike":"🇫🇷","Senegal":"🇸🇳","Irak":"🇮🇶","Norge":"🇳🇴",
+  "Argentina":"🇦🇷","Østerrike":"🇦🇹","Algeria":"🇩🇿","Jordan":"🇯🇴",
+  "Portugal":"🇵🇹","DR Kongo":"🇨🇩","Uzbekistan":"🇺🇿","Colombia":"🇨🇴",
+  "England":"🏴","Kroatia":"🇭🇷","Ghana":"🇬🇭","Panama":"🇵🇦",
+};
+
+// 32 testlag — 16 i venstre halvdel, 16 i høyre halvdel
+const LEFT_TEAMS = [
+  "Mexico","Brasil","Frankrike","Argentina","Spania","Portugal","England","Tyskland",
+  "Nederland","Belgia","USA","Canada","Norge","Senegal","Marokko","Ghana",
+];
+const RIGHT_TEAMS = [
+  "Uruguay","Colombia","Japan","Sverige","Kroatia","Sveits","Egypt","Algeria",
+  "Qatar","Tunisia","Ecuador","Panama","Østerrike","Skottland","Iran","Paraguay",
+];
+
+// Rundestruktur per side: R32(8 kamper) -> R16(4) -> QF(2) -> SF(1)
+const SIDE_ROUNDS = [
+  { id:"r32", label:"1/16-finale", slots:8, points:2 },
+  { id:"r16", label:"1/8-finale",  slots:4, points:4 },
+  { id:"qf",  label:"Kvartfinale", slots:2, points:5 },
+  { id:"sf",  label:"Semifinale",  slots:1, points:6 },
+];
+const FINAL_POINTS = 8;
+
+function tf(team){ return team ? `${FLAGS[team]||"⚽"} ${team}` : ""; }
+
+let state = {
+  name:"", email:"", started:false, submitted:false, submitState:"idle",
+  picks: {}, // keys: "L_r32_0", "R_r32_0", ..., "L_sf_0", "R_sf_0", "final_0"
+};
+
+function render() {
+  const root = document.getElementById("root");
+  try {
+    if (!state.started) { root.innerHTML = renderLanding(); attachLandingEvents(); return; }
+    if (state.submitted) { root.innerHTML = renderThankYou(); return; }
+    root.innerHTML = renderMain();
+    attachMainEvents();
+  } catch(err) {
+    root.innerHTML = `<div style="padding:30px;color:#e05050;font-family:monospace;font-size:0.8rem;white-space:pre-wrap">FEIL: ${err.message}\n\n${err.stack}</div>`;
+  }
+}
+
+// ── BRACKET LOGIC ────────────────────────────────────────────────────────────
+function getTeamsForSideMatch(side, roundIdx, matchIdx) {
+  if (roundIdx === 0) {
+    const teams = side === "L" ? LEFT_TEAMS : RIGHT_TEAMS;
+    return [teams[matchIdx*2], teams[matchIdx*2+1]];
+  }
+  const prevRoundId = SIDE_ROUNDS[roundIdx-1].id;
+  const w1 = state.picks[`${side}_${prevRoundId}_${matchIdx*2}`];
+  const w2 = state.picks[`${side}_${prevRoundId}_${matchIdx*2+1}`];
+  return [w1 || null, w2 || null];
+}
+
+function getFinalTeams() {
+  const left = state.picks["L_sf_0"];
+  const right = state.picks["R_sf_0"];
+  return [left || null, right || null];
+}
+
+function pickSideTeam(side, roundIdx, matchIdx, team) {
+  const roundId = SIDE_ROUNDS[roundIdx].id;
+  const key = `${side}_${roundId}_${matchIdx}`;
+  const old = state.picks[key];
+  state.picks[key] = team;
+  if (old && old !== team) clearDownstream(side, roundIdx, matchIdx);
+  render();
+}
+
+function clearDownstream(side, roundIdx, matchIdx) {
+  let idx = matchIdx;
+  for (let r = roundIdx+1; r < SIDE_ROUNDS.length; r++) {
+    const nextIdx = Math.floor(idx/2);
+    const key = `${side}_${SIDE_ROUNDS[r].id}_${nextIdx}`;
+    delete state.picks[key];
+    idx = nextIdx;
+  }
+  delete state.picks["final_0"];
+}
+
+function pickFinal(team) {
+  state.picks["final_0"] = team;
+  render();
+}
+
+function countFilled() {
+  let total = 0, filled = 0;
+  ["L","R"].forEach(side => {
+    SIDE_ROUNDS.forEach(r => {
+      for (let i=0;i<r.slots;i++) { total++; if (state.picks[`${side}_${r.id}_${i}`]) filled++; }
+    });
+  });
+  total += 1; if (state.picks["final_0"]) filled++;
+  return { total, filled };
+}
+
+// ── LANDING ──────────────────────────────────────────────────────────────────
+function renderLanding() {
+  const canStart = state.name.trim() && state.email.trim() && state.email.includes("@");
+  return `
+  <div class="landing">
+    <div class="landing-inner">
+      <div class="landing-emoji">🏆</div>
+      <div class="landing-title">VM 2026</div>
+      <div class="landing-sub">Sluttspillsbracket</div>
+      <div class="landing-points">
+        Poenggiving: 1/16 <b>2p</b> · 1/8 <b>4p</b> · QF <b>5p</b> · SF <b>6p</b> · Vinner <b>8p</b>
+      </div>
+      <div class="landing-card">
+        <div class="landing-label">Ditt navn</div>
+        <input id="inp-name" class="landing-input" placeholder="Skriv inn navnet ditt akkurat som i hovedtipset" value="${state.name}"/>
+        <div class="landing-label">E-postadresse</div>
+        <input id="inp-email" class="landing-input" placeholder="ola@nordmann.no" type="email" value="${state.email}"/>
+      </div>
+      <button id="btn-start" class="landing-btn" ${canStart?"":"disabled"}>Start bracket →</button>
+      <div style="color:var(--muted);font-size:0.72rem;margin-top:14px">⚠️ Testversjon — 32 plassholderlag</div>
+    </div>
+  </div>`;
+}
+function attachLandingEvents() {
+  document.getElementById("inp-name").oninput = e => { state.name=e.target.value; updateStartBtn(); };
+  document.getElementById("inp-email").oninput = e => { state.email=e.target.value; updateStartBtn(); };
+  document.getElementById("btn-start").onclick = () => { state.started=true; render(); };
+}
+function updateStartBtn() {
+  const btn = document.getElementById("btn-start");
+  btn.disabled = !(state.name.trim() && state.email.trim() && state.email.includes("@"));
+}
+
+// ── MATCHUP CARD HTML ──────────────────────────────────────────────────────
+function matchupHtml(side, roundIdx, matchIdx) {
+  const [teamA, teamB] = getTeamsForSideMatch(side, roundIdx, matchIdx);
+  const roundId = SIDE_ROUNDS[roundIdx].id;
+  const picked = state.picks[`${side}_${roundId}_${matchIdx}`];
+  const locked = !teamA || !teamB;
+  function teamRow(team) {
+    if (!team) return `<div class="matchup-team placeholder"><span class="flag">⏳</span><span>—</span></div>`;
+    const sel = picked === team;
+    return `<div class="matchup-team ${sel?'selected':''}" data-side="${side}" data-round="${roundIdx}" data-match="${matchIdx}" data-team="${team}">
+      <span class="flag">${FLAGS[team]||"⚽"}</span><span>${team}</span>
+    </div>`;
+  }
+  return `<div class="matchup ${locked?'locked':''}">
+    ${teamRow(teamA)}
+    <div class="matchup-divider"></div>
+    ${teamRow(teamB)}
+  </div>`;
+}
+
+function finalMatchupHtml() {
+  const [left, right] = getFinalTeams();
+  const picked = state.picks["final_0"];
+  function teamRow(team) {
+    if (!team) return `<div class="matchup-team placeholder"><span class="flag">⏳</span><span>—</span></div>`;
+    const sel = picked === team;
+    return `<div class="matchup-team ${sel?'selected':''}" data-final="1" data-team="${team}">
+      <span class="flag">${FLAGS[team]||"⚽"}</span><span>${team}</span>
+    </div>`;
+  }
+  return `<div class="matchup final-card">
+    ${teamRow(left)}
+    <div class="matchup-divider"></div>
+    ${teamRow(right)}
+  </div>`;
+}
+
+// ── MAIN VIEW ────────────────────────────────────────────────────────────────
+function renderMain() {
+  const { total, filled } = countFilled();
+  const allDone = filled === total;
+  const champion = state.picks["final_0"];
+
+  function renderSideColumns(side) {
+    return SIDE_ROUNDS.map((r, ri) => `
+      <div class="round-col">
+        <div class="round-col-label">${r.label} · ${r.points}p</div>
+        ${Array.from({length:r.slots},(_,mi)=>matchupHtml(side, ri, mi)).join('<div style="height:18px"></div>')}
+      </div>
+    `).join('');
+  }
+
+  let html = `
+  <div class="header">
+    <span style="font-size:1.2rem">🏆</span>
+    <div>
+      <div class="header-title">Sluttspillsbracket</div>
+      <div class="header-sub">${state.name}</div>
+    </div>
+    <div class="header-progress">${filled}/${total} valgt</div>
+  </div>
+
+  <div class="bracket-scroll">
+    <div class="bracket-tree">
+      <div class="side left">
+        ${renderSideColumns("L")}
+      </div>
+
+      <div class="center-col">
+        <div class="final-label">Finale · ${FINAL_POINTS}p</div>
+        ${finalMatchupHtml()}
+        <div class="champion-card">
+          <div class="champion-trophy">🏆</div>
+          ${champion ? `<div class="champion-name">${tf(champion)}</div>` : `<div class="champion-placeholder">VM-vinner</div>`}
+        </div>
+      </div>
+
+      <div class="side right">
+        ${renderSideColumns("R")}
+      </div>
+    </div>
+  </div>
+  <div class="hint-scroll">↔️ Scroll sidelengs for å se hele bracketen</div>
+
+  <div class="main-bottom">`;
+
+  if (allDone) {
+    html += `
+    <div class="summary-box" style="margin-top:24px">
+      <div class="summary-title">Din bracket er klar!</div>
+      <div class="summary-row" style="border-bottom:none">
+        <span style="color:var(--gold);font-weight:bold">🏆 VM-vinner</span>
+        <span style="color:var(--goldLight);font-weight:bold">${tf(champion)}</span>
+      </div>
+    </div>
+    ${state.submitState==="error" ? `<div class="error-box">⚠️ Noe gikk galt ved innsending. Prøv igjen.</div>` : ''}
+    <div style="text-align:center;margin-top:16px">
+      <button class="nav-btn submit" id="btn-submit" ${state.submitState==="loading"?"disabled":""}>
+        ${state.submitState==="loading" ? "Sender inn..." : "🏆 Lever bracket"}
+      </button>
+    </div>`;
+  } else {
+    html += `<div style="text-align:center;color:var(--muted);font-size:0.84rem;margin-top:10px">Fyll ut alle kamper for å levere bracketen (${total-filled} igjen)</div>`;
+  }
+
+  html += `</div>`;
+  return html;
+}
+
+function attachMainEvents() {
+  document.querySelectorAll(".matchup-team[data-team]:not([data-final])").forEach(el => {
+    el.onclick = () => pickSideTeam(el.dataset.side, parseInt(el.dataset.round), parseInt(el.dataset.match), el.dataset.team);
+  });
+  document.querySelectorAll(".matchup-team[data-final]").forEach(el => {
+    el.onclick = () => pickFinal(el.dataset.team);
+  });
+  const submitBtn = document.getElementById("btn-submit");
+  if (submitBtn) submitBtn.onclick = handleSubmit;
+}
+
+async function handleSubmit() {
+  state.submitState = "loading";
+  render();
+  const payload = { name:state.name, email:state.email, timestamp:new Date().toISOString(), picks:JSON.stringify(state.picks) };
+  try {
+    await fetch(SHEET_URL, { method:"POST", mode:"no-cors", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
+    state.submitState = "done";
+    state.submitted = true;
+  } catch(e) {
+    state.submitState = "error";
+  }
+  render();
+}
+
+// ── THANK YOU ────────────────────────────────────────────────────────────────
+function renderThankYou() {
+  const champion = state.picks["final_0"];
+  return `
+  <div class="thankyou">
+    <div class="thankyou-inner">
+      <div style="font-size:3.5rem;margin-bottom:10px">🏆</div>
+      <h1 style="color:var(--goldLight);font-size:1.8rem;margin-bottom:8px">Bracket levert!</h1>
+      <p style="color:var(--muted);margin-bottom:8px">${state.name} — bracket er registrert.</p>
+      <div style="background:#0a1a0a;border:1px solid var(--green);border-radius:8px;padding:10px 16px;margin-bottom:24px;display:inline-block">
+        <span style="color:var(--green);font-size:0.84rem">📧 Bekreftelse sendt til ${state.email}</span>
+      </div>
+      <div class="summary-box" style="text-align:left">
+        <div class="summary-row" style="border-bottom:none">
+          <span style="color:var(--gold);font-weight:bold">🏆 VM-vinner</span>
+          <span style="color:var(--goldLight);font-weight:bold">${tf(champion)}</span>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+render();
+</script>
+</body>
+</html>
