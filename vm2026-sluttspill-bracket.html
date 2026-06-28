@@ -43,17 +43,19 @@
     .landing-btn:disabled { background:#1a2235; color:var(--muted); cursor:not-allowed; }
 
     /* ── BRACKET TREE ── */
-    .bracket-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; padding:30px 16px 50px; width:100%; }
-    .bracket-tree { display:flex; align-items:center; justify-content:flex-start; gap:0; min-width:1400px; width:max-content; position:relative; }
+    /* Default (mobile-first): vertical stacking, no horizontal scroll */
+    .bracket-scroll { padding:24px 14px 50px; width:100%; }
+    .bracket-tree { display:flex; flex-direction:column; gap:0; width:100%; }
 
-    .side { display:flex; flex-direction:column; gap:0; min-height:1px; }
-    .side.left { align-items:flex-end; }
-    .side.right { align-items:flex-start; }
+    .side { display:flex; flex-direction:column; gap:0; }
 
-    .round-col { display:flex; flex-direction:column; justify-content:center; gap:14px; width:170px; flex-shrink:0; }
+    .side-label { text-align:center; color:var(--muted); font-size:0.72rem; font-weight:bold; letter-spacing:0.1em; text-transform:uppercase; margin:6px 0 14px; padding:6px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+    .side-label.right { margin-top:24px; }
+
+    .round-col { display:flex; flex-direction:column; gap:14px; width:100%; margin-bottom:20px; }
     .round-col-label { text-align:center; color:var(--gold); font-size:0.68rem; font-weight:bold; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:8px; }
 
-    .matchup { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:6px; position:relative; }
+    .matchup { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:6px; position:relative; max-width:340px; margin:0 auto; }
     .matchup.locked { opacity:0.45; }
     .matchup-team { display:flex; align-items:center; gap:6px; padding:6px 8px; border-radius:6px; cursor:pointer; font-size:0.78rem; transition:all 0.12s; }
     .matchup-team:hover { background:var(--faint); }
@@ -62,6 +64,18 @@
     .matchup-team.placeholder:hover { background:transparent; }
     .matchup-divider { height:1px; background:var(--border); margin:2px 4px; }
     .flag { font-size:0.95rem; flex-shrink:0; }
+
+    /* ── DESKTOP: horizontal tree layout ── */
+    @media (min-width:900px) {
+      .bracket-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; padding:30px 16px 50px; }
+      .bracket-tree { flex-direction:row; align-items:center; justify-content:flex-start; min-width:1400px; width:max-content; }
+      .side { gap:0; }
+      .side.left { align-items:flex-end; }
+      .side.right { align-items:flex-start; }
+      .side-label { display:none; }
+      .round-col { flex-direction:column; justify-content:center; width:170px; flex-shrink:0; margin-bottom:0; }
+      .matchup { max-width:none; margin:0; }
+    }
 
     /* Connector lines between rounds */
     .connector-col { display:flex; flex-direction:column; justify-content:center; width:24px; flex-shrink:0; position:relative; }
@@ -78,13 +92,16 @@
     /* ── MOBILE ROUND VIEW (fallback under 700px sometimes preferred but we keep scroll) ── */
     .hint-scroll { text-align:center; color:var(--muted); font-size:0.74rem; padding:8px 0 0; }
 
-    .main-bottom { max-width:480px; margin:0 auto; padding:0 16px 50px; }
+    .main-bottom { max-width:480px; margin:0 auto; padding:0 16px 70px; }
     .summary-box { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px; margin-bottom:16px; }
     .summary-title { color:var(--gold); font-size:0.74rem; font-weight:bold; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:10px; }
     .summary-row { display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--border); font-size:0.82rem; }
     .nav-btn.submit { background:linear-gradient(135deg,var(--gold),var(--goldLight)); color:#06080f; border:none; font-weight:bold; padding:14px 36px; letter-spacing:0.06em; text-transform:uppercase; box-shadow:0 6px 24px var(--goldGlow); border-radius:10px; cursor:pointer; font-family:var(--font); font-size:1rem; }
     .nav-btn.submit:disabled { background:#1a2235; color:var(--muted); cursor:not-allowed; }
     .error-box { background:#2a0d0d; border:1px solid #e05050; border-radius:8px; padding:12px 16px; margin-bottom:16px; color:#e05050; font-size:0.85rem; }
+
+    .sticky-progress { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-top:2px solid var(--gold); padding:10px 16px; text-align:center; font-size:0.8rem; color:var(--gold); font-weight:bold; z-index:150; }
+    @media (min-width:900px) { .sticky-progress { display:none; } }
 
     .thankyou { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:2rem; }
     .thankyou-inner { text-align:center; max-width:420px; }
@@ -95,7 +112,7 @@
 <div id="root"></div>
 
 <script>
-const SHEET_URL = "PASTE_SLUTTSPILL_APPS_SCRIPT_URL_HERE";
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbw2S0Q5PMl83qblfpNpHlLfhae47UeOh9jdBF_K1iZ_6ZV_gAAMeZpag0xSlSgr1Pm_Tg/exec";
 
 const FLAGS = {
   "Mexico":"🇲🇽","Sør-Korea":"🇰🇷","Sør-Afrika":"🇿🇦","Tsjekkia":"🇨🇿",
@@ -302,6 +319,7 @@ function renderMain() {
   <div class="bracket-scroll">
     <div class="bracket-tree">
       <div class="side left">
+        <div class="side-label">⬅️ Venstre del av bracketen</div>
         ${renderSideColumns("L")}
       </div>
 
@@ -315,11 +333,11 @@ function renderMain() {
       </div>
 
       <div class="side right">
+        <div class="side-label right">➡️ Høyre del av bracketen</div>
         ${renderSideColumns("R")}
       </div>
     </div>
   </div>
-  <div class="hint-scroll">↔️ Scroll sidelengs for å se hele bracketen</div>
 
   <div class="main-bottom">`;
 
@@ -343,6 +361,11 @@ function renderMain() {
   }
 
   html += `</div>`;
+
+  if (!allDone) {
+    html += `<div class="sticky-progress">⚽ ${filled}/${total} kamper valgt — ${total-filled} igjen</div>`;
+  }
+
   return html;
 }
 
