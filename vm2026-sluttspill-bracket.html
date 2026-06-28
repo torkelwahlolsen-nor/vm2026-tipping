@@ -129,24 +129,38 @@ const FLAGS = {
   "England":"🏴","Kroatia":"🇭🇷","Ghana":"🇬🇭","Panama":"🇵🇦",
 };
 
-// 32 testlag — 16 i venstre halvdel, 16 i høyre halvdel
+// ── EKTE LAG — Runde av 32, offisiell bracket (oppdatert 28. juni 2026) ──────
+// Venstre side (8 kamper, 16 lag) møter høyre side i finalen via hver sin semifinale
 const LEFT_TEAMS = [
-  "Mexico","Brasil","Frankrike","Argentina","Spania","Portugal","England","Tyskland",
-  "Nederland","Belgia","USA","Canada","Norge","Senegal","Marokko","Ghana",
+  "Sør-Afrika","Canada",       // R32 m1 -> R16#1
+  "Nederland","Marokko",       // R32 m2 -> R16#1
+  "Tyskland","Paraguay",       // R32 m3 -> R16#2
+  "Frankrike","Sverige",       // R32 m4 -> R16#2
+  "Brasil","Japan",            // R32 m5 -> R16#3
+  "Elfenbenskysten","Norge",   // R32 m6 -> R16#3
+  "Mexico","Ecuador",          // R32 m7 -> R16#4
+  "England","DR Kongo",        // R32 m8 -> R16#4
 ];
 const RIGHT_TEAMS = [
-  "Uruguay","Colombia","Japan","Sverige","Kroatia","Sveits","Egypt","Algeria",
-  "Qatar","Tunisia","Ecuador","Panama","Østerrike","Skottland","Iran","Paraguay",
+  "Spania","Østerrike",            // R32 m1 -> R16#1
+  "Kroatia","Portugal",            // R32 m2 -> R16#1
+  "Belgia","Senegal",              // R32 m3 -> R16#2
+  "USA","Bosnia-Hercegovina",      // R32 m4 -> R16#2
+  "Australia","Egypt",             // R32 m5 -> R16#3
+  "Argentina","Kapp Verde",        // R32 m6 -> R16#3
+  "Sveits","Algeria",              // R32 m7 -> R16#4
+  "Colombia","Ghana",              // R32 m8 -> R16#4
 ];
 
 // Rundestruktur per side: R32(8 kamper) -> R16(4) -> QF(2) -> SF(1)
 const SIDE_ROUNDS = [
-  { id:"r32", label:"1/16-finale", slots:8, points:2 },
-  { id:"r16", label:"1/8-finale",  slots:4, points:4 },
-  { id:"qf",  label:"Kvartfinale", slots:2, points:5 },
-  { id:"sf",  label:"Semifinale",  slots:1, points:6 },
+  { id:"r32", label:"1/16-finale", dato:"28. jun – 3. jul", slots:8, points:2 },
+  { id:"r16", label:"1/8-finale",  dato:"4. – 7. jul",      slots:4, points:4 },
+  { id:"qf",  label:"Kvartfinale", dato:"9. – 11. jul",     slots:2, points:5 },
+  { id:"sf",  label:"Semifinale",  dato:"14. – 15. jul",    slots:1, points:6 },
 ];
 const FINAL_POINTS = 8;
+const FINAL_DATO = "19. jul";
 
 function tf(team){ return team ? `${FLAGS[team]||"⚽"} ${team}` : ""; }
 
@@ -240,7 +254,7 @@ function renderLanding() {
         <input id="inp-email" class="landing-input" placeholder="ola@nordmann.no" type="email" value="${state.email}"/>
       </div>
       <button id="btn-start" class="landing-btn" ${canStart?"":"disabled"}>Start bracket →</button>
-      <div style="color:var(--muted);font-size:0.72rem;margin-top:14px">⚠️ Testversjon — 32 plassholderlag</div>
+      <div style="color:var(--muted);font-size:0.72rem;margin-top:14px">🏆 De 32 lagene fra Runde av 32 er klare!</div>
     </div>
   </div>`;
 }
@@ -300,7 +314,7 @@ function renderMain() {
   function renderSideColumns(side) {
     return SIDE_ROUNDS.map((r, ri) => `
       <div class="round-col">
-        <div class="round-col-label">${r.label} · ${r.points}p</div>
+        <div class="round-col-label">${r.label} · ${r.points}p<br><span style="color:var(--muted);font-weight:normal;font-size:0.9em;letter-spacing:normal;text-transform:none">${r.dato}</span></div>
         ${Array.from({length:r.slots},(_,mi)=>matchupHtml(side, ri, mi)).join('<div style="height:18px"></div>')}
       </div>
     `).join('');
@@ -324,7 +338,7 @@ function renderMain() {
       </div>
 
       <div class="center-col">
-        <div class="final-label">Finale · ${FINAL_POINTS}p</div>
+        <div class="final-label">Finale · ${FINAL_POINTS}p<br><span style="color:var(--muted);font-weight:normal;font-size:0.9em;letter-spacing:normal;text-transform:none">${FINAL_DATO}</span></div>
         ${finalMatchupHtml()}
         <div class="champion-card">
           <div class="champion-trophy">🏆</div>
