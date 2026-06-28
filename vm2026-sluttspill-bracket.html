@@ -129,34 +129,34 @@ const FLAGS = {
   "England":"🏴","Kroatia":"🇭🇷","Ghana":"🇬🇭","Panama":"🇵🇦",
 };
 
-// ── EKTE LAG — Runde av 32, offisiell bracket (oppdatert 28. juni 2026) ──────
-// Venstre side (8 kamper, 16 lag) møter høyre side i finalen via hver sin semifinale
+// ── EKTE LAG — Runde av 32, VERIFISERT mot VG sin offisielle bracket-grafikk ──
+// Venstre side (SF: Frankrike-siden, Dallas 14. jul) og høyre side (SF: England-siden, Atlanta 15. jul)
 const LEFT_TEAMS = [
-  "Sør-Afrika","Canada",       // R32 m1 -> R16#1
-  "Nederland","Marokko",       // R32 m2 -> R16#1
-  "Tyskland","Paraguay",       // R32 m3 -> R16#2
-  "Frankrike","Sverige",       // R32 m4 -> R16#2
-  "Brasil","Japan",            // R32 m5 -> R16#3
-  "Elfenbenskysten","Norge",   // R32 m6 -> R16#3
-  "Mexico","Ecuador",          // R32 m7 -> R16#4
-  "England","DR Kongo",        // R32 m8 -> R16#4
+  "Tyskland","Paraguay",          // R32
+  "Frankrike","Sverige",          // R32 -> R16: Tyskland/Frankrike-siden
+  "Sør-Afrika","Canada",          // R32
+  "Nederland","Marokko",          // R32 -> R16: Sør-Afrika/Marokko-siden
+  "Portugal","Kroatia",           // R32
+  "Spania","Østerrike",           // R32 -> R16: Portugal/Spania-siden
+  "USA","Bosnia-Hercegovina",     // R32
+  "Belgia","Senegal",             // R32 -> R16: USA/Senegal-siden
 ];
 const RIGHT_TEAMS = [
-  "Spania","Østerrike",            // R32 m1 -> R16#1
-  "Kroatia","Portugal",            // R32 m2 -> R16#1
-  "Belgia","Senegal",              // R32 m3 -> R16#2
-  "USA","Bosnia-Hercegovina",      // R32 m4 -> R16#2
-  "Australia","Egypt",             // R32 m5 -> R16#3
-  "Argentina","Kapp Verde",        // R32 m6 -> R16#3
-  "Sveits","Algeria",              // R32 m7 -> R16#4
-  "Colombia","Ghana",              // R32 m8 -> R16#4
+  "Brasil","Japan",                 // R32
+  "Elfenbenskysten","Norge",        // R32 -> R16: Brasil/Norge-siden
+  "Mexico","Ecuador",               // R32
+  "England","DR Kongo",             // R32 -> R16: Mexico/England-siden
+  "Argentina","Kapp Verde",         // R32
+  "Australia","Egypt",              // R32 -> R16: Argentina/Egypt-siden
+  "Sveits","Algeria",               // R32
+  "Colombia","Ghana",               // R32 -> R16: Sveits/Colombia-siden
 ];
 
 // Rundestruktur per side: R32(8 kamper) -> R16(4) -> QF(2) -> SF(1)
 const SIDE_ROUNDS = [
-  { id:"r32", label:"1/16-finale", dato:"28. jun – 3. jul", slots:8, points:2 },
+  { id:"r32", label:"1/16-finale", dato:"28. jun – 4. jul", slots:8, points:2 },
   { id:"r16", label:"1/8-finale",  dato:"4. – 7. jul",      slots:4, points:4 },
-  { id:"qf",  label:"Kvartfinale", dato:"9. – 11. jul",     slots:2, points:5 },
+  { id:"qf",  label:"Kvartfinale", dato:"9. – 12. jul",     slots:2, points:5 },
   { id:"sf",  label:"Semifinale",  dato:"14. – 15. jul",    slots:1, points:6 },
 ];
 const FINAL_POINTS = 8;
