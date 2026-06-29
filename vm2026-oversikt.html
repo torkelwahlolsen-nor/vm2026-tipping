@@ -130,6 +130,7 @@
     <button class="tab" onclick="visTab('sporsmal')">📋 Spørsmål</button>
     <button class="tab" onclick="visTab('kamper')">⚽ Kamper</button>
     <button class="tab" onclick="visTab('norge')">🇳🇴 Norge</button>
+    <button class="tab" onclick="visTab('sluttspill')">🏅 Sluttspill</button>
   </div>
 </div>
 
@@ -142,6 +143,23 @@
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbxsdfcoNzSzV8bI98TJKG7csyFUs8NhQE1uxTHvGaCeWq5EXflNEIZ_uO6AzzFEYFTgag/exec";
+const SLUTTSPILL_API_URL = "https://script.google.com/macros/s/AKfycbzSAKW6EQ3fHUakg056YCGrsDPzp00zQnVgU8lz6NzVGd-yg_Ouk-wgjkV4A7KgDSSj1Q/exec";
+
+// Sluttspill bracket-struktur (matcher Apps Script-kolonneoverskrifter)
+const SLUTTSPILL_ROUNDS = [
+  { id:"r32", label:"1/16-finale", slots:8, points:2 },
+  { id:"r16", label:"1/8-finale",  slots:4, points:4 },
+  { id:"qf",  label:"Kvartfinale", slots:2, points:5 },
+  { id:"sf",  label:"Semifinale",  slots:1, points:6 },
+];
+const SLUTTSPILL_FINAL_POINTS = 8;
+
+function sluttspillKolonne(side, roundId, idx) {
+  const sideNavn = side === "L" ? "Venstre" : "Høyre";
+  const roundLabel = SLUTTSPILL_ROUNDS.find(r => r.id === roundId).label + " (" + SLUTTSPILL_ROUNDS.find(r => r.id === roundId).points + "p)";
+  return `${sideNavn} - ${roundLabel} - Kamp ${idx+1}`;
+}
+const SLUTTSPILL_FINALE_KOLONNE = "Finale / VM-vinner (8p)";
 
 const KAMPER_LISTE = [
   {dato:"11. jun",gruppe:"A",kamp:"Mexico-Sør-Afrika"},{dato:"11. jun",gruppe:"A",kamp:"Sør-Korea-Tsjekkia"},
@@ -185,10 +203,20 @@ function toggleBarDetaljer(id) {
 }
 
 // ── DATA ──────────────────────────────────────────────────────────────────────
+let SLUTTSPILL_DATA = null;
+
 async function lastData() {
   try {
-    const resp = await fetch(API_URL);
-    DATA = await resp.json();
+    const [respHoved, respSluttspill] = await Promise.all([
+      fetch(API_URL),
+      fetch(SLUTTSPILL_API_URL).catch(() => null),
+    ]);
+    DATA = await respHoved.json();
+    try {
+      SLUTTSPILL_DATA = respSluttspill ? await respSluttspill.json() : { svar: [] };
+    } catch(e) {
+      SLUTTSPILL_DATA = { svar: [] };
+    }
     document.getElementById("header-sub").textContent =
       DATA.svar.length + " deltakere · Oppdatert " + new Date().toLocaleTimeString("no-NO",{hour:"2-digit",minute:"2-digit"});
     visTab(aktivTab);
@@ -198,10 +226,15 @@ async function lastData() {
   }
 }
 
+function finnSluttspillSvar(navn) {
+  if (!SLUTTSPILL_DATA || !SLUTTSPILL_DATA.svar) return null;
+  return SLUTTSPILL_DATA.svar.find(s => (s["Navn"]||"").trim().toLowerCase() === (navn||"").trim().toLowerCase()) || null;
+}
+
 function visTab(tab) {
   aktivTab = tab;
   document.querySelectorAll(".tab").forEach((t,i) => {
-    t.classList.toggle("active", ["poengtavle","sporsmal","kamper","norge"][i] === tab);
+    t.classList.toggle("active", ["poengtavle","sporsmal","kamper","norge","sluttspill"][i] === tab);
   });
   const main = document.getElementById("main");
   if (!DATA) return;
@@ -209,6 +242,7 @@ function visTab(tab) {
   if (tab === "sporsmal")   main.innerHTML = byggSporsmal();
   if (tab === "kamper")     { main.innerHTML = byggKamper(); oppdaterKampFilter(); }
   if (tab === "norge")      main.innerHTML = byggNorge();
+  if (tab === "sluttspill") main.innerHTML = byggSluttspill();
 }
 
 // ── POENGBEREGNING ────────────────────────────────────────────────────────────
@@ -238,28 +272,65 @@ function beregnPoeng(svar, fasit) {
   return p;
 }
 
+// ── POENGBEREGNING — SLUTTSPILL ─────────────────────────────────────────────
+function beregnSluttspillPoeng(sluttspillSvar, sluttspillFasit) {
+  if (!sluttspillSvar || !sluttspillFasit) return 0;
+  let p = 0;
+  ["L","R"].forEach(side => {
+    SLUTTSPILL_ROUNDS.forEach(r => {
+      for (let i = 0; i < r.slots; i++) {
+        const kol = sluttspillKolonne(side, r.id, i);
+        const s = String(sluttspillSvar[kol]||"").trim();
+        const f = String(sluttspillFasit[kol]||"").trim();
+        if (s && f && s === f) p += r.points;
+      }
+    });
+  });
+  const sF = String(sluttspillSvar[SLUTTSPILL_FINALE_KOLONNE]||"").trim();
+  const fF = String(sluttspillFasit[SLUTTSPILL_FINALE_KOLONNE]||"").trim();
+  if (sF && fF && sF === fF) p += SLUTTSPILL_FINAL_POINTS;
+  return p;
+}
+
+function harSluttspillFasit() {
+  return SLUTTSPILL_DATA && SLUTTSPILL_DATA.fasit && Object.keys(SLUTTSPILL_DATA.fasit).length > 0;
+}
+
 // ── POENGTAVLE ────────────────────────────────────────────────────────────────
 function byggPoengtavle() {
   const fasit = DATA.fasit;
   const harFasit = fasit && Object.keys(fasit).length > 2;
-  let html = '<div class="sec-head"><h2><span>🏆</span> Poengtavle</h2><p>Klikk på en deltaker for å se alle svar</p></div>';
+  const harSSFasit = harSluttspillFasit();
+  let html = '<div class="sec-head"><h2><span>🏆</span> Poengtavle</h2><p>Klikk på en deltaker for å se alle svar — totalpoeng (hovedtipping + sluttspill)</p></div>';
 
-  const liste = harFasit
-    ? DATA.svar.map(s => ({s, poeng:beregnPoeng(s,fasit)})).sort((a,b)=>(b.poeng||0)-(a.poeng||0))
-    : DATA.svar.map((s,i) => ({s, poeng:null}));
+  const liste = DATA.svar.map(s => {
+    const hovedPoeng = harFasit ? beregnPoeng(s, fasit) : null;
+    const ssSvar = finnSluttspillSvar(s["Navn"]);
+    const ssPoeng = (harSSFasit && ssSvar) ? beregnSluttspillPoeng(ssSvar, SLUTTSPILL_DATA.fasit) : 0;
+    const totalPoeng = (hovedPoeng||0) + ssPoeng;
+    return { s, hovedPoeng, ssPoeng, ssSvar, totalPoeng };
+  });
 
-  if (!harFasit) {
-    html += `<div class="ingen-fasit">⏳ Fasit er ikke lagt inn ennå. Poengtavlen oppdateres etter hvert som kampresultater fylles inn i Fasit-fanen i Google Sheets.</div>`;
+  const sortert = (harFasit || harSSFasit)
+    ? [...liste].sort((a,b) => b.totalPoeng - a.totalPoeng)
+    : liste;
+
+  if (!harFasit && !harSSFasit) {
+    html += `<div class="ingen-fasit">⏳ Fasit er ikke lagt inn ennå. Poengtavlen oppdateres etter hvert som kampresultater fylles inn i Fasit-fanene i Google Sheets.</div>`;
+  } else if (!harSSFasit) {
+    html += `<div class="ingen-fasit" style="margin-bottom:14px">⏳ Sluttspillfasit er ikke lagt inn ennå — kun hovedtipping-poeng vises foreløpig.</div>`;
   }
 
   html += '<div class="poengtavle">';
-  liste.forEach(({s, poeng}, i) => {
-    const plassklass = harFasit ? (i===0?"topp":i===1?"topp2":i===2?"topp3":"") : "";
-    const plasskikon = harFasit ? (i===0?"🥇":i===1?"🥈":i===2?"🥉":`${i+1}.`) : `${i+1}.`;
+  sortert.forEach(({s, hovedPoeng, ssPoeng, ssSvar, totalPoeng}, i) => {
+    const visPoeng = harFasit || harSSFasit;
+    const plassklass = visPoeng ? (i===0?"topp":i===1?"topp2":i===2?"topp3":"") : "";
+    const plasskikon = visPoeng ? (i===0?"🥇":i===1?"🥈":i===2?"🥉":`${i+1}.`) : `${i+1}.`;
     const id = "poeng-detaljer-"+i;
     const vmVinner = s["VM-vinner (10p)"] || "—";
     const semi = (s["Semifinalister (4p×4)"]||"").split(",").map(x=>x.trim()).filter(Boolean);
     const toppscorer = s["Toppscorer (6p)"] || "—";
+    const harLevertSS = !!ssSvar;
 
     // Norges-kamper
     const norgeKamper = ["Irak-Norge","Norge-Senegal","Frankrike-Norge"];
@@ -273,12 +344,21 @@ function byggPoengtavle() {
         <div class="poeng-plass">${plasskikon}</div>
         <div style="flex:1">
           <div class="poeng-navn">${s["Navn"]||"—"}</div>
-          <div class="poeng-detalj">VM-vinner: ${vmVinner}</div>
+          <div class="poeng-detalj">VM-vinner: ${vmVinner} ${!harLevertSS ? '· <span style="color:var(--red)">Ikke levert sluttspill</span>' : ''}</div>
         </div>
-        ${harFasit ? `<div style="text-align:right"><div class="poeng-tall">${poeng}</div><div class="poeng-suffix">poeng</div></div>` : ""}
+        ${visPoeng ? `<div style="text-align:right">
+          <div class="poeng-tall">${totalPoeng}</div>
+          <div class="poeng-suffix">poeng totalt</div>
+        </div>` : ""}
         <button class="expand-btn">▼</button>
       </div>
       <div class="detaljer" id="${id}">
+        ${visPoeng ? `<div class="detaljer-tittel">Poengfordeling</div>
+        <div class="detaljer-grid">
+          <span class="detaljer-chip highlight">Hovedtipping: ${hovedPoeng ?? "—"}p</span>
+          <span class="detaljer-chip ${harLevertSS ? '' : 'rød'}">Sluttspill: ${harLevertSS ? ssPoeng+'p' : 'Ikke levert (0p)'}</span>
+          <span class="detaljer-chip highlight">Totalt: ${totalPoeng}p</span>
+        </div>` : ''}
         <div class="detaljer-tittel">Turneringen</div>
         <div class="detaljer-grid">
           <span class="detaljer-chip highlight">VM-vinner: ${vmVinner}</span>
@@ -301,6 +381,10 @@ function byggPoengtavle() {
         <div class="detaljer-grid">
           ${["A","B","C","D","E","F","G","H","I","J","K","L"].map(g=>`<span class="detaljer-chip">Gr.${g}: ${s[`GW-${g} (3p)`]||"—"}</span>`).join("")}
         </div>
+        ${harLevertSS ? `<div class="detaljer-tittel">Sluttspillsbracket</div>
+        <div class="detaljer-grid">
+          <span class="detaljer-chip highlight">VM-vinner: ${ssSvar[SLUTTSPILL_FINALE_KOLONNE]||"—"}</span>
+        </div>` : ''}
       </div>
     </div>`;
   });
@@ -578,6 +662,88 @@ function byggNorge() {
   html += '</div>';
 
   html += '</div>';
+  return html;
+}
+
+// ── SLUTTSPILL-FANE ────────────────────────────────────────────────────────────
+function byggSluttspill() {
+  const svar = (SLUTTSPILL_DATA && SLUTTSPILL_DATA.svar) || [];
+  const n = svar.length;
+  const totalDeltakere = DATA.svar.length;
+  const ikkeLevert = totalDeltakere - n;
+
+  let html = '<div class="sec-head"><h2><span>🏅</span> Sluttspillsbracket</h2><p>Fordeling av valg per kamp og runde</p></div>';
+
+  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+    <div class="sporsmal-kort" style="text-align:center">
+      <div style="font-size:1.6rem;color:var(--green)">${n}</div>
+      <div style="color:var(--muted);font-size:0.78rem">har levert bracket</div>
+    </div>
+    <div class="sporsmal-kort" style="text-align:center">
+      <div style="font-size:1.6rem;color:${ikkeLevert>0?'var(--red)':'var(--muted)'}">${ikkeLevert}</div>
+      <div style="color:var(--muted);font-size:0.78rem">har ikke levert (0p)</div>
+    </div>
+  </div>`;
+
+  if (n === 0) {
+    html += `<div class="ingen-fasit">Ingen har levert sluttspillsbracket ennå.</div>`;
+    return html;
+  }
+
+  // VM-vinner fordeling
+  const vinnerTeller = {};
+  svar.forEach(s => { const v=(s[SLUTTSPILL_FINALE_KOLONNE]||"").trim(); if(v) vinnerTeller[v]=(vinnerTeller[v]||0)+1; });
+  const vinnerSort = Object.entries(vinnerTeller).sort((a,b)=>b[1]-a[1]);
+  if (vinnerSort.length) {
+    html += '<div class="sporsmal-kort" style="margin-bottom:16px"><div class="sporsmal-tittel">🏆 VM-vinner (8p) — fordeling</div>';
+    vinnerSort.forEach(([label,antall],i) => {
+      const pct = Math.round(antall/n*100);
+      const farger = ["#c8a84b","#3dba6e","#e05050","#d4a017","#7b68ee","#20b2aa"];
+      const farge = farger[i%farger.length];
+      const navn = svar.filter(s=>(s[SLUTTSPILL_FINALE_KOLONNE]||"").trim()===label).map(s=>s["Navn"]||"?");
+      const bid = `ssvinner-${i}`;
+      html += `<div class="bar-rad" onclick="toggleBarDetaljer('${bid}')">
+        <div class="bar-label">${label}</div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${pct}%;background:${farge}20;border-left:3px solid ${farge}"><span style="color:${farge};font-size:0.72rem;font-weight:bold">${pct}%</span></div></div>
+        <div class="bar-count">${antall}/${n}</div>
+      </div>
+      <div class="bar-detaljer" id="${bid}"><div class="detaljer-grid">${navn.map(nv=>`<span class="detaljer-chip">${nv}</span>`).join("")}</div></div>`;
+    });
+    html += '</div>';
+  }
+
+  // Per runde, per side
+  ["L","R"].forEach(side => {
+    const sideNavn = side === "L" ? "Venstre side (Frankrike/Spania-siden)" : "Høyre side (Brasil/England/Norge-siden)";
+    html += `<div class="divider"><div class="divider-line"></div><span class="divider-label">${sideNavn}</span><div class="divider-line"></div></div>`;
+    SLUTTSPILL_ROUNDS.forEach(r => {
+      html += `<div class="sporsmal-kort" style="margin-bottom:12px"><div class="sporsmal-tittel">${r.label} (${r.points}p)</div>`;
+      for (let i = 0; i < r.slots; i++) {
+        const kol = sluttspillKolonne(side, r.id, i);
+        const teller = {};
+        svar.forEach(s => { const v=(s[kol]||"").trim(); if(v) teller[v]=(teller[v]||0)+1; });
+        const sortert = Object.entries(teller).sort((a,b)=>b[1]-a[1]);
+        if (!sortert.length) continue;
+        html += `<div style="margin-bottom:10px"><div style="color:var(--muted);font-size:0.74rem;margin-bottom:4px">Kamp ${i+1}</div>`;
+        sortert.forEach(([label,antall],idx) => {
+          const pct = Math.round(antall/n*100);
+          const farger = ["#c8a84b","#3dba6e","#e05050","#d4a017"];
+          const farge = farger[idx%farger.length];
+          const navn = svar.filter(s=>(s[kol]||"").trim()===label).map(s=>s["Navn"]||"?");
+          const bid = `ss-${side}-${r.id}-${i}-${idx}`.replace(/[^a-zA-Z0-9-]/g,"_");
+          html += `<div class="bar-rad" onclick="toggleBarDetaljer('${bid}')">
+            <div class="bar-label">${label}</div>
+            <div class="bar-wrap"><div class="bar-fill" style="width:${pct}%;background:${farge}20;border-left:3px solid ${farge}"><span style="color:${farge};font-size:0.72rem;font-weight:bold">${pct}%</span></div></div>
+            <div class="bar-count">${antall}/${n}</div>
+          </div>
+          <div class="bar-detaljer" id="${bid}"><div class="detaljer-grid">${navn.map(nv=>`<span class="detaljer-chip">${nv}</span>`).join("")}</div></div>`;
+        });
+        html += '</div>';
+      }
+      html += '</div>';
+    });
+  });
+
   return html;
 }
 
